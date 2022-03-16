@@ -1,5 +1,4 @@
 # Tips for writing useful analysis scripts
-
 Writing data analysis scripts can quickly become a mess! There are many steps to go from raw MEG/EEG data to the final results. It is essential to keep track of what processing step that goes before and after another. Know what data that should be read in one step, saved to memory, and then read in the next step. If we mess this up, we might end up with invalid results. And it is easy to  make errors: read the wrong data files, using different versions of toolboxes, working in the wrong directory, etc., especially in MEG/EEG data processing where there are several manual steps and we often have to go back to re-run analysis.
 
 Below you find a quick list of recommendations to make it easier for you to write useful analysis scripts. The recommendations are based on van Vliet (2019)[^1] and the MEG-BIDS guidelines[^2]. I recommend that you take a look at these when you have to write your own analysis scripts.
@@ -20,7 +19,6 @@ You can also add longer segments of text that should not be treated as code, but
 There are several reasons why you should comment your scripts. The first reason is that it makes it much easier to go back to your old scripts and know what they are supposed to do. What is self-evident when you first write your code might not be evident years later. The time you spent on writing comments in your code will come back later. The second reason for commenting your code is the usefulness if you are part of collaboration where you have to share data and scripts. What is self-evident for you might not be evident for other people. The third reason is that there is an increase in demand for sharing analysis scripts when publishing scientific articles, either for review purposes or demand by publishers that it has to be made available upon publication. Make it easier for the reviewers to understand what you are doing with your data. And finally, writing what the code is supposed to do helps you identify code that is not working correctly.
 
 ## Python modules
-
 Python you need to import the modules and/or functions that you will use. Many are included by default, but you will need to install some additional modules. How to do this will not be covered in this tutorial. Make a habit of importing the libraries in the begging of your script.
 
 ```python 
@@ -29,6 +27,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ```
+For this course, you will use the module MNE-python and its dependencies to analyses MEG/EEG data. It is recommended that you also install Anaconda, a virtual envorinment. 
+
+Follow the instructions on how to install Anaconda and MNE [here](https://mne.tools/stable/install/install_python.html)
+
 ## Use section breaks when testing code
 When writing code you often want to run only a small snip of code, e.g. when you test your code while scripting.
 
@@ -42,10 +44,6 @@ y = np.random.random(len(x))
 # %% Make a new section
 plt.scatter(x, y)
 ```
-
-For this tutorial, you will use the module MNE-python and its dependencies to analyses MEG/EEG data. It is recommended that you also install Anaconda, a virtual envorinment. 
-
-Follow the instructions on how to install Anaconda and MNE [here](https://mne.tools/stable/install/install_python.html)
 
 ## Define the paths and import modules at the beginning of the script
 The start of my script may look like this:
@@ -167,7 +165,6 @@ When you run multiple scripts on several subjects and have to go back to redo st
 The best way to avoid such errors is to specify subject id and filenames as few places as possible; ideally only once! This can be done by making a meta-script where you specify filenames and subject id (such as the code snippet above) that you then run in the beginning of each script.
 
 ## Ask for help
-
 If you encounter an error or problem that you do not know how to solve, there is a high likelihood that someone else have encountered the exact same problem before you. You might find that the answer has already been answered in an online forum or on one of the many MEG/EEG mailing list. Simply starting with googling the error message or the issue you are uncertain about often gives you the solution you need.
 
 There are also a lot of good resources for tips and tricks on MEG/EEG analysis. The MEG/EEG community is very open and helpful. Not only are the major analysis toolboxes open-source (which mean you can use it freely and even contribute yourself), they all have mailing lists that you can sign up for and ask for help from MEG/EEG scientists around the world. They tend to be quick to reply and friendly. Do not be afraid to ask for help!
