@@ -4,49 +4,66 @@ Writing data analysis scripts can quickly become a mess! There are many steps to
 
 Below you find a quick list of recommendations to make it easier for you to write useful analysis scripts. The recommendations are based on van Vliet (2019)[^1] and the MEG-BIDS guidelines[^2]. I recommend that you take a look at these when you have to write your own analysis scripts.
 
-## Comment your code
-In MATLAB you write comments with the percentage symbol `%`. Use this to write short explanations of what section or even single lines of code in your scripts do.
+Here the scripts are written in [Spyder](https://www.spyder-ide.org), an envirornmet that is well suited for our purposes and will make any transition from MATLAB to Python easier.
 
+## Comment your code
+In Python you write comments with the hash symbol `#`. Use this to write short explanations of what section or even single lines of code in your scripts do.
+
+```python
+"""
+You can add longer segments of text that shoudl not be treated as code, but as plan text like this.
+"""
+```
 There are several reasons why you should comment your scripts. The first reason is that it makes it much easier to go back to your old scripts and know what they are supposed to do. What is self-evident when you first write your code might not be evident years later. The time you spent on writing comments in your code will come back later. The second reason for commenting your code is the usefulness if you are part of collaboration where you have to share data and scripts. What is self-evident for you might not be evident for other people. The third reason is that there is an increase in demand for sharing analysis scripts when publishing scientific articles, either for review purposes or demand by publishers that it has to be made available upon publication. Make it easier for the reviewers to understand what you are doing with your data. And finally, writing what the code is supposed to do helps you identify code that is not working correctly.
 
 ## Use section breaks when testing code
 When writing code you often want to run only a small snip of code, e.g. when you test your code while scripting.
 
-If you only want to run parts of your script, you can mark code and select `run selection` or press `F9`. However, constantly marking code manually becomes annoying, really fast. Instead, use section breaks. You start a section with `%%` (two percentage signs). The line is commented, and you will notice that the section is highlighted in a yellowish colour. If you now press `ctrl+enter` you will run the code in the highlighted section.
+Python you need to import the modules and/or functions that you will use. Many are included by default, but you will need to install some additional modules. How to do this will not be covered in this tutorial. Make a habit of importing the libraries in the begging of your script.
 
-```matlab
-%% Make a section
-x = 1:10;
-y = rand(size(x));
+```python 
 
-%% Make a new section
-plot(x, y, 'or')
+import numpy as np
+import matplotlib.pyplot as plt
+
 ```
 
-## Define the paths and toolboxes at the beginning of the script
-For this tutorial, you will use the toolbox FieldTrip to analyses MEG/EEG data. FieldTrip is written in MATLAB but is not a part of MATLAB. We , therefore, need to make sure that MATLAB has FieldTrip in its PATH definition to use the functions. The same applies if you use other toolboxes. This is simple: simply use the MATLAB function  `addpath( ... )` to add the path where you downloaded FieldTrip. If you have several versions of FieldTrip or have used other toolboxes before you run this script, it is also a good idea to restore the PATH with the function `resotredefaultpath`
+If you only want to run parts of your script, you can mark code and select `run selection` or press `F9`. However, constantly marking code manually becomes annoying, really fast. Instead, use section breaks. You start a section with `# %%` (hash and two percentage signs). The line is commented, and you will notice that the section is grey (with defualt settings). If you now press `ctrl+enter / cmd+enter` you will run the code in the highlighted section.
 
+```python
+# %% Make a section
+
+x = np.arange(1, 11)
+y = np.random.random(len(x))
+
+# %% Make a new section
+plt.scatter(x, y)
+```
+
+For this tutorial, you will use the module MNE-python and its dependencies to analyses MEG/EEG data. It is recommended that you also install Anaconda, a virtual envorinment. 
+
+Follow the instructions on how to install Anaconda and MNE [here](https://mne.tools/stable/install/install_python.html)
+
+## Define the paths and import modules at the beginning of the script
 The start of my script may look like this:
 
-```Matlab
-restoredefaultpath
-addpath('/home/mikkel/fieldtrip')       % Change to your path
-ft_defaults
+```python
+
+import mne
+import numpy as np
+import matplotlib.pyplot as plt
+
+home_path = '/Users/andger/'
+project_path = home_path + 'meeg_course_mne/'
+
 ```
 
-If you have several variables with the same names, it might also be good to add 
-```matlab
-close all       % Close all open windows
-clear all       % Clear all variables from the workspace
-````
-before the above code, to clear all figures and variables from your workspace.
-
-After this, we are ready to begin our script, and we will use the version of FieldTrip that we know we have at the given location.
-
 ## Run all analysis with one version of the software
-Toolboxes for data analysis gets updated regularly. FieldTrip, for example, is updated with a new version daily to keep the functionality up to date or to fix bugs in the code that users might have occurred. However, do not update FieldTrip daily! When you begin a project, make sure that all data is processed with the same version of the software that you use. If you need to update, which you sometimes need to do, make sure that your code is backwards compatible with the updated toolbox. If you need to update, better re-run everything.
+Modules for data analysis gets updated regularly. However, do not update MNE daily! When you begin a project, make sure that all data is processed with the same version of the software that you use. If you need to update, which you sometimes need to do, make sure that your code is backwards compatible with the updated modules. If you need to update, better re-run everything. 
 
 If you have many ongoing projects, it is useful to have several versions to make sure that you use the same versions for each project.
+
+Some advantages with using Anaconda is that you can create a new environment with updated modules if you are starting a new project. You can also export a list of you moduls and versions to recreate environments.
 
 ## One script does one data processing step
 It might seem like a good idea to have one big script that you only have to run once to go from raw data to the finished result. It is not! It only makes it difficult to find bugs and errors. Instead, try to follow the principle:
@@ -56,12 +73,12 @@ It might seem like a good idea to have one big script that you only have to run 
 For example, one script that import raw data from disc, does the pre-processing, and then save the processed data to script. You can then easily name your scripts in the order they should run and call them from master script, e.g.:
 
 ````bash
-S01_import_data.m
-S02_run_ica.m
-S03_evoked_analysis.m
-S04_source_analysis.m
-S05_statistics.m
-...
+python S01_import_data.py
+python S02_run_ica.py
+python S03_evoked_analysis.py
+python S04_source_analysis.py
+python S05_statistics.py
+python ...
 ````
 
 ## Save intermediate results
@@ -75,9 +92,9 @@ Do not rename files each time you run the analysis. Use a consistent way to easy
 
 ```bash
 sub01-raw-tsss.fif
-sub01-raw-downsampled.mat
-sub01-epochs.mat
-sub01-tfr.mat
+sub01-raw-downsampled.fif
+sub01-epochs.fif
+sub01-tfr.fif
 ...
 ```
 
@@ -91,15 +108,15 @@ When you have data from multiple subjects resist the temptation to throw all dat
     ./sub01 ...
         ./session1 ...
             ./sub01-ses1-raw-tsss.fif
-            ./sub01-ses1-raw-downsampled.mat
-            ./sub01-ses1-epochs.mat
-            ./sub01-ses1-tfr.mat
+            ./sub01-ses1-raw-downsampled.fif
+            ./sub01-ses1-epochs.fif
+            ./sub01-ses1-tfr.fif
             ... etc.
         ./session2 ...
             ./sub01-ses2-raw-tsss.fif
-            ./sub01-ses2-raw-downsampled.mat
-            ./sub01-ses2-epochs.mat
-            ./sub01-ses2-tfr.mat
+            ./sub01-ses2-raw-downsampled.fif
+            ./sub01-ses2-epochs.fif
+            ./sub01-ses2-tfr.fif
             ... etc.
     ./sub02 ...
     ... etc.
@@ -111,30 +128,34 @@ In the tutorial data, you will find one subject called "NatMEG_0177" with one se
 
 We can then setup subject and recording specific paths as below. The cell array `subjects_and_dates` can be expanded with more subjects and sessions when needed. You will see these lines of code several times throughout the tutorials.
 
-```Matlab
-%% Define subjects and sessions
+```python
+# %% Define subjects and sessions in lists
 
-subjects_and_dates = ...
-             {
-                'NatMEG_0177/170424/'
-             };
+subjects_and_dates = [
+    'NatMEG_0177/170424/'
+    ]
 
-subjects = ...
-            {
-                'NatMEG_0177'
-            };
+subjects = [
+    'NatMEG_0177'
+    ]
                 
-filenames = {...
-        'tactile_stim_raw_tsss_mc.fif'
-        'tactile_stim_raw_tsss_mc-1.fif'
-        'tactile_stim_raw_tsss_mc-2.fif'
-            };
+filenames = [
+    'tactile_stim_raw_tsss_mc.fif',
+    'tactile_stim_raw_tsss_mc-1.fif',
+    'tactile_stim_raw_tsss_mc-2.fif'
+    ]
 ```
 
 In your scripts, you can then easily loop though several subjects and run the same processing step on all subjects. You also make sure that you always read and save data to the correct folder by generating the paths within the loops, rather than specifying it manually in each script; e.g., like this:
 
-````Matlab
-output_path = fullfile(meg_path, subjects_and_dates{1});
+````python
+
+from os import path
+
+meg_path = path.join(project_path, 'MEG')
+
+output_path = path.join(meg_path, subjects_and_dates[0])  # Note that Python starts counting at 0
+    
 ````
 
 ## Specify paths and subject names once
