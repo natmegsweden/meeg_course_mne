@@ -3,7 +3,6 @@ Writing data analysis scripts can quickly become a mess! There are many steps to
 
 Below you find a quick list of recommendations to make it easier for you to write useful analysis scripts. The recommendations are based on van Vliet (2019)[^1] and the MEG-BIDS guidelines[^2]. I recommend that you take a look at these when you have to write your own analysis scripts.
 
-Here the scripts are written in [Spyder](https://www.spyder-ide.org), an envirornmet that is well suited for our purposes and will make any transition from MATLAB to Python easier.
 
 ## Comment your code
 In Python you write comments with the hash symbol `#`. Use this to write short explanations of what section or even single lines of code in your scripts do.
@@ -27,9 +26,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ```
-For this course, you will use the module MNE-python and its dependencies to analyses MEG/EEG data. It is recommended that you also install Anaconda, a virtual envorinment. 
-
-Follow the instructions on how to install Anaconda and MNE [here](https://mne.tools/stable/install/install_python.html)
 
 ## Use section breaks when testing code
 When writing code you often want to run only a small snip of code, e.g. when you test your code while scripting.

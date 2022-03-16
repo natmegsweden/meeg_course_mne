@@ -2,9 +2,19 @@
 
 Here you find the tutorials for the doctoral course *Imaging in Neuroscience: with a focus on MEG and EEG Methods* at Karolinska Institutet from April 14th to May 3rd.
 
+This is an attempt to port from MATLAB to MNE-python.
+
 All tutorials are example of how to analyse MEG/EEG signals. This is not meant as an exhaustive account of how to analyse MEG/EEG data. The material is design to give an overview of different aspects of MEG/EEG data analysis and useable example code on how to do the analysis. 
 
-To run the tutorial you need MATLAB (www.mathworks.com), FieldTrip (www.fieldtriptoolbox.org), and the tutorial data. All tutorials use FieldTrip. To learn more about FieldTrip, we recommend looking at the FieldTrip webpage for documentation and many more tutorial examples.
+To run the tutorial you need MNE-Python (https://mne.tools/stable/index.html), for that you first need to install Python and some modules, preferably installed in an Anaconda virtual environment.
+
+For this course, you will use the module MNE-python and its dependencies to analyses MEG/EEG data. It is recommended that you also install Anaconda, a virtual envorinment. 
+
+Follow the instructions on how to install Anaconda and MNE [here](https://mne.tools/stable/install/install_python.html)
+
+You also need the tutorial data. All tutorials use MNE-Python. To learn more about MNE-Python, we recommend looking at the MNE-Python [webpage](https://mne.tools/stable/index.html) for documentation and many more tutorial examples.
+
+Here the scripts are written in [Spyder](https://www.spyder-ide.org), an envirornmet that is well suited for our purposes and will make any transition from MATLAB to Python easier.
 
 ## Overview
 
@@ -44,5 +54,8 @@ The tutorial material is created 2018-2020 by
 * Lau M. Andersen, CFIN, Aarhus University (www.laumollerandersen.org/).
 * Robert Oostenveld, Donders Institute for Brain, Cognition and Behaviour, Radboud University.
 
-If you discover errors in the tutorials, code that won't run, or similar, please post your errors to: mikkel.vinding@ki.se
+The attempt to port the tutorials to MNE-Python was done by Andreas Gerhardsson
+
+If you discover errors in the tutorials, code that won't run, or similar, please post your errors to: andreas.gerhardsson@ki.se
+
 
