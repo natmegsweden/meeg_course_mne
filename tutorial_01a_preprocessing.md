@@ -16,55 +16,66 @@ Note that though there are three data files, they are all part of one single rec
 
 This is an important thing to notice when recording data. It illustrates the need for consistent file naming. For the example data, you can see that all are called `tactile_stim`, indicating that it is the same task.
 
-## Setup paths
+## Import libraries and setup paths
 The first step is to point to the path where we have the data and setup FieldTrip. Change these to appropriate paths for your operating system and setup.
 
-```matlab
-clear all
-close all
-restoredefaultpath
-addpath('C:/fieldtrip/')            % Change to match your FieldTrip path
-ft_defaults
+```python
+import mne
+from os.path import join
 
-meg_path = 'C:/meeg_course/data';   % Change to match your data path
+home_path = '/Users/andger/OneDrive - Karolinska Institutet/NatMEG/NatMEG core group' # Change to match your home path
+project_path = join(home_path, 'meeg_course_mne') # Change to match your project path
+meg_path = join(project_path, 'data')   # Change to match your data path
+
+figs_path = join(project_path, 'figs')
+
+
 ```
 
 Then define the subject and recording specific paths. For now, we only have one subject and session. In principle, we could just define the path as one string variable when we only have one subject. But we introduce this already now as it is a good ´way to organize your data when you have multiple subjects or session. In that case, the cell array `subjects_and_dates` can be expanded to include more subjects, simply by adding the subject ids and session names.
 
-```matlab
-%% Define subject paths
-% List of all subjects/session
-subjects_and_dates = ...
-                    {
-                        'NatMEG_0177/170424/'  % add more as needed
-                    };
-           
-% List of all filenames that we will import                
-filenames = {...
-        'tactile_stim_raw_tsss_mc.fif' 
-        'tactile_stim_raw_tsss_mc-1.fif'
-        'tactile_stim_raw_tsss_mc-2.fif'
-            };
+```python
+# %% Define subject paths
+# List of all subjects/session
 
-% Define where to put output data
-output_path = fullfile(meg_path, subjects_and_dates{1}, 'MEG');
+subjects_and_dates = [
+    'NatMEG_0177/170424/'  # Add more subjects as you like, separate with comma    
+    ]
+           
+# List of all filenames that we will import                
+filenames = [
+    'tactile_stim_raw_tsss_mc.fif',
+    'tactile_stim_raw_tsss_mc-1.fif',
+    'tactile_stim_raw_tsss_mc-2.fif'
+            ]
+
+# Define where to put output data
+output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 ```
 
 ## First look at what is in the data files
 The `fif` files contain everything that was recorded during the recording data, including MEG data, EEG data, triggers, and various metadata. Before you import everything, take a look at what is in the files. This is especially a good idea if you are dealing with large files to avoid that you confidentially read in more data than what your computer can handle.
 
-Now it is time to use the first FieldTrip function: use `ft_read_header` to read metadata from the `fif` files. Note that this will not read the data yet. `ft_read_header` is a low-level FieldTrip function and does not need a `cfg` struct to work.
+Now it is time to use the first MNE-Python function: use `mne.io.read_info` to read metadata from the `fif` files. Note that this will not read the data yet. 
 
-```Matlab
-%% Read header
-infile = fullfile(output_path, filenames{1});
-hdr = ft_read_header(infile);
+```python
+
+info = mne.io.read_info(join(output_path, filenames[0]))
+print(info)
+
 ```
-The output of `ft_read_header` is here the struct `hdr`. This contains information about what channels is in the data. Explore the struct to find out what is in the data file.
+The info object is like a python dictionary and contains information about the data. Explore the struct to find out what is in the data file.
 
+
+```python
+
+info.keys()
+info['ch_names']
+
+```
 One thing to be aware of is that this only read the header information from one of the three `fif` files. The information about which channels are in the data is the same for all three files as it was recording in one session. But the duration and time-stamps of the recordings might be off because of the split files.
 
-Now read the headers of all three data files to find out how long the recording was and how much data we have. Make a preallocated cell array and loop over data files to read the header information into the cell array:
+Now read the headers of all three data files to find out how long the recording was and how much data we have.
 
 ```Matlab
 %% Read all headers
