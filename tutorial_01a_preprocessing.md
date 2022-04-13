@@ -193,18 +193,11 @@ There are several parameters which you can change in the plot functtion. First, 
 # %% Inspect raw data
 raw.plot(events=eve, event_id=event_id)  # Note that all channels are plotted
 
-raw.copy().pick(['mag', 'eog']).plot(events=eve, event_id=event_id)  
+fig = raw.copy().pick(['mag']).plot(events=eve, event_id=event_id, start = 120)  
+fig.savefig(join(project_path, 'figures', 'raw_data.png'))
 
-cfg = [];
-cfg.datafile    = infile;
-cfg.continuous  = 'yes'
-cfg.viewmode    = 'vertical';
-cfg.plotevents  = 'yes';      % Plot triggers as horizontal lines
-cfg.channel     = 'megmag';   % Which channels to plot (change to 'meggrad' to plot gradiometers and 'eeg' to plot EEG)
-
-ft_databrowser(cfg);
 ```
-![ft_databrowser](figures/ft_databrowser_1.png "ft_databrowser")
+![raw_data](figures/raw_data.png "raw_data")
 
 Browse through the data with the arrows buttons in the bottom and change the scaling with the `horizontal` and `vertical` buttons.
 
