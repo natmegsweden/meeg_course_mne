@@ -21,14 +21,17 @@ The first step is to point to the path where we have the data and setup FieldTri
 
 ```python
 import mne
+import os
 from os.path import join
+import numpy as np
 
-home_path = '/Users/andger/OneDrive - Karolinska Institutet/NatMEG/NatMEG core group' # Change to match your home path
-project_path = join(home_path, 'meeg_course_mne') # Change to match your project path
-meg_path = join(project_path, 'data')   # Change to match your data path
+
+home_path = '/home/andger' # Change to match your home path
+project_path = join(home_path, 'courses/meeg_course_mne') # Change to match your project path
+meg_path = join(project_path, '../data')   # Change to match your data path
 
 figs_path = join(project_path, 'figs')
-
+os.listdir(meg_path)
 
 ```
 
@@ -59,8 +62,8 @@ The `fif` files contain everything that was recorded during the recording data, 
 Now it is time to use the first MNE-Python function: use `mne.io.read_info` to read metadata from the `fif` files. Note that this will not read the data yet. 
 
 ```python
-
-info = mne.io.read_info(join(output_path, filenames[0]))
+infile = join(output_path, filenames[0])
+info = mne.io.read_info(infile)
 print(info)
 
 ```
@@ -73,20 +76,24 @@ info.keys()
 info['ch_names']
 
 ```
-One thing to be aware of is that this only read the header information from one of the three `fif` files. The information about which channels are in the data is the same for all three files as it was recording in one session. But the duration and time-stamps of the recordings might be off because of the split files.
 
-Now read the headers of all three data files to find out how long the recording was and how much data we have.
+## Read raw data
+Read the raw file, the file data is not automatically loaded into memory to save data. Note that MNE automatically read all split files. If you have files that are split but are not regarded as such by MNE-python, for example if you have stopped a recording within the same condition, then it is probably easiest if to read in the files separatly, concatenate and save as new files. After that MNE-python will treat the files as split files. Since the consequtive split-file is automatically read in this case, I will not put the code in the code field. If you concatenate files that are part of the split-files chain, you risk creating an adding copies of the same data.
 
-```Matlab
-%% Read all headers
-hdrs = cell(3,1);
+raws = []
+for file in ['file.fif', 'file-b.fif', 'file-c.fif']:
+    raws.append(mne.io.read_raw_fif(join(output_path, file)))
+    raw = mne.concatenate_raws(raws)
+raw.save('filename')
 
-for ii = 1:length(filenames)
-    infile = fullfile(output_path, filenames{ii});
-    hdrs{ii} = ft_read_header(infile);
-end
+
+```python
+# %%
+raw = mne.io.read_raw_fif(infile)
+raw # check raw file
+raw.info # Check info, same as the info object above
+
 ```
-Take a look at the information in the `hdrs` array (index cell arrays with curly brackets like this: `hdrs{1}`). Look at the channel information as you did before. The channel information should be the same for all three files.
 
 > **Question 1.1:**
 >
@@ -97,7 +104,8 @@ Take a look at the information in the `hdrs` array (index cell arrays with curly
 > * How many samples are there in the entire recording? 
 > * How long is the time of the recording?
 >
-> Hint: look at the fields `nSamples` and `Fs` to calculate the total duration of the recording session.
+> Hint: look at len(raw) and raw.info['sfreq'] to calculate the total duration of the recording session.
+
 
 ## Read trigger values
 The data consists of tactile stimulation to all five fingers of the right hand. When each stimulation to a finger occurred is marked by a trigger in the data. We will use these triggers to select the parts of the data that we will analyze later on.
@@ -116,74 +124,62 @@ For this data, I know from my recording notes the trigger values represent the f
 
 But knowing what the values represent is one thing. Another is to see how they actually look in the data. It is a good quality check to inspect how the trigger values appear in the data. For example, if we are to pilot a newly designed experiment, we want to make sure that the value and the order of the triggers appear correct.
 
-To inspect trigger values we use `ft_read_event`. Similar to `ft_read_header` this is also a low-level FieldTrip function and does not need a `cfg` struct to work. Now use `ft_read_event` to read the events (i.e. triggers) in the file you specified above:
+To inspect trigger values we use `mne.find_events()` in the raw-file. Now use `mne.find_events()` to read the events (i.e. triggers) in the file you specified above:
 
-```matlab
-%% Read events
-eve = ft_read_event(infile);
+```python
+
+eve = mne.find_events(raw)
+
 ```
 Look at the `eve` structure:
 
 > **Question 1.2:** What are the values and the types of events in `eve` and how many events are there in total?
 
-Because there are several trigger channels in the data, FieldTrip read all channels as independent channels and combine everything into a single struct. There are advantages of this, but for now, we are only interested in the composite trigger channel called `STI101`.
+Because there are several trigger channels in the data, MNE-Python automatically finds the composite channel 'STI101'. If you bumb into another configuration or you need other event channels you can specify which stim channel to read data from:
 
-Now use the header info you read above to find the channel index of the channel called `STI101`:
+```python
+# Find only the relevant channel
+eve = mne.find_events(raw, stim_channel = 'STI101')
 
-```matlab
-% Find only the relevant channel
-chanindx = find(~cellfun(@isempty, strfind(hdr.label, 'STI101')));
-
-% Read events only from relevant channel
-eve = ft_read_event(infile, 'chanindx', chanindx);
 ```
-Again, be aware that this only read the events from one of the three `fif` files. The information about which channels are in the data is the same for all three files as it was recording in one session. Now read the events from all three data files to find all the triggers in the entire recording.
 
-```matlab
-%% Read all events
-eves = cell(3,1);
-for ii = 1:length(filenames)
-    infile = fullfile(output_path, filenames{ii});
-    eves{ii} = ft_read_event(infile, 'chanindx', chanindx);
-end
+The event data structure is an array consisting of:
+[sample number, event on, event code]
 
-% Combine
-eve = [eves{1}, eves{2}, eves{3}];
+The middle column is almost always 0, basically indicating that the event is not overlapping more than one sample. 
+
+
+```python
+# %% See unique events
+np.unique(eve[:,-1])
+
+# %% Make a summary table of event count
+
+np.unique(eve[:,-1], return_counts=True)
+
 ```
-Now that we have all events combined in one struct, take a look at how many we have of each trial:
+In addition to knowing how many trials we have of each type, we also want to know how the trials are distributed over time. The sample the trigger occurred is stored in the first column `eve[:,0]`.
 
-```matlab
-% See unique events
-unique([eve.value])
-
-% Make a summary table of event count
-[vals,~,idx] = unique([eve.value]);
-n  = histc([eve.value], vals);
-evetab = [vals; n];   % Make a quick table
+Since the trigger values might tell you nothing you can add event ID's to the trigger values by defining them in a dictionary. This is useful later when plotting and creating epochs. We will comment out events that are not fingers.
+```python
+event_id = {'Little finger': 1,
+            'Ring finger': 2,
+            'Middle finger': 4,
+            'Index finger': 8,
+            'Thumb': 16
+            # 'New block begins': 32,
+            # 'End of experiment': 64
+            }
+    
 ```
-In addition to knowing how many trials we have of each type, we also want to know how the trials are distributed over time. The time the trigger occurred is stored in `eve.sample`.
-
-If you, however, look at the minimum and maximum sample values in `eves{1}`, `eves{2}`, and `eves{3}`, e.g. like this (the square bracket `[...]` easily converts the struct into a vector that can be parsed to MATLAB functions):
+Now plot the triggers across time:
 
 ```matlab
-min([eves{1}.sample])   % Change "1" to "2" and "3"
-max([eves{1}.sample])   % Change "1" to "2" and "3"
-```
-you will notice that the range of the samples is the same for all files. This would mean that the triggers for each part of the occurred within the same duration of time. This is obviously not possible. What happened here is that the sample info is defined relative to the onset of the individual files rather than the onset of the recording session. Let us correct that before we plot the triggers across time:
+# %% Plot
 
-```matlab
-% Correct sample info for split files
-sam1 = [eves{1}.sample]; 
-sam2 = [eves{2}.sample]+hdrs{1}.nSamples;
-sam3 = [eves{3}.sample]+hdrs{1}.nSamples+hdrs{2}.nSamples;
-allsam = [sam1, sam2, sam3];
-```
-Then plot the trigger values across time:
+fig = mne.viz.plot_events(eve, event_id=event_id)
+fig.savefig(join(project_path, 'figures', 'triggers.png'))
 
-```matlab
-% Plot
-figure
-scatter(allsam, [eve.value])
 ```
 
 ![triggers](figures/triggers.png "Triggers over time")
@@ -191,12 +187,14 @@ scatter(allsam, [eve.value])
 ## Inspect raw data
 Now that you have a sense about what is in the data files, it is time to take a look at the actual data. Always start by visually inspecting raw data.
 
-FieldTrip has a GUI called `ft_databrowser` to plot raw data.
+There are several parameters which you can change in the plot functtion. First, plot all channels and show the events. Then pick only a subset of the channels. when using `pick` you have to do this on a copy of the object.
 
-First, we inspect the magnetometers (`cfg.channel = 'megmag'`). We will look at the different sensor types (magnetometer, gradiometer, and electrodes) separately. The three sensor types are on different numerical scales so will look weird plotted in the same plot (but try to set `cfg.channel = 'all'`).
+```python
+# %% Inspect raw data
+raw.plot(events=eve, event_id=event_id)  # Note that all channels are plotted
 
-```matlab
-%% Inspect raw data
+raw.copy().pick(['mag', 'eog']).plot(events=eve, event_id=event_id)  
+
 cfg = [];
 cfg.datafile    = infile;
 cfg.continuous  = 'yes'
