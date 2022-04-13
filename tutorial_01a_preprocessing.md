@@ -199,16 +199,15 @@ fig.savefig(join(project_path, 'figures', 'raw_data.png'))
 ```
 ![raw_data](figures/raw_data.png "raw_data")
 
-Browse through the data with the arrows buttons in the bottom and change the scaling with the `horizontal` and `vertical` buttons.
+Browse through the data. Find browsing functions under the Help button.
 
-You can also add visual pre-processing options by clicking the `preproc cfg` button to the right of the plot. Try, for example, to add a low-pass filter to the data, by adding this to the `preproc cfg`:
+You can also change visalization option. Try, for example, to add a low-pass filter to the data`:
 
-```matlab
-cfg.preproc.lpfilter = 'yes';
-cfg.preproc.lpfreq = 40;
+```python
+raw.copy().pick('mag').plot(lowpass=40)
+
 ```
 
-To see all the options type `help ft_databrowser` in the MATLAB terminal.
 
 ## Read raw data
 Now that you have a sense about what is in the data files, it is time to read the actual data.
