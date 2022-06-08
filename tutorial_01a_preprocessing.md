@@ -22,16 +22,21 @@ The first step is to point to the path where we have the data and setup FieldTri
 ```python
 import mne
 import os
-from os.path import join
+from os.path import join, exists
 import numpy as np
 
 
 home_path = '/home/andger' # Change to match your home path
 project_path = join(home_path, 'courses/meeg_course_mne') # Change to match your project path
 meg_path = join(project_path, '../data')   # Change to match your data path
+meg_path = '../data'
 
 figs_path = join(project_path, 'figs')
+
+figs_path = 'figures'
+
 os.listdir(meg_path)
+os.listdir(figs_path)
 
 ```
 
@@ -135,7 +140,7 @@ Look at the `eve` structure:
 
 > **Question 1.2:** What are the values and the types of events in `eve` and how many events are there in total?
 
-Because there are several trigger channels in the data, MNE-Python automatically finds the composite channel 'STI101'. If you bumb into another configuration or you need other event channels you can specify which stim channel to read data from:
+Because there are several trigger channels in the data, MNE-Python automatically finds the composite channel 'STI101'. If you bump into another configuration or you need other event channels you can specify which stim channel to read data from:
 
 ```python
 # Find only the relevant channel
@@ -174,11 +179,12 @@ event_id = {'Little finger': 1,
 ```
 Now plot the triggers across time:
 
-```matlab
+```python
 # %% Plot
-
 fig = mne.viz.plot_events(eve, event_id=event_id)
-fig.savefig(join(project_path, 'figures', 'triggers.png'))
+figname = join(figs_path, 'triggers.png')
+if not exists(figname):
+    fig.savefig(figname)
 
 ```
 
@@ -193,8 +199,10 @@ There are several parameters which you can change in the plot functtion. First, 
 # %% Inspect raw data
 raw.plot(events=eve, event_id=event_id)  # Note that all channels are plotted
 
-fig = raw.copy().pick(['mag']).plot(events=eve, event_id=event_id, start = 120)  
-fig.savefig(join(project_path, 'figures', 'raw_data.png'))
+figname = join(figs_path, 'raw_data.png')
+if not exists(figname):
+    fig = raw.copy().pick(['mag']).plot(events=eve, event_id=event_id, start = 120)  
+    fig.savefig(figname)
 
 ```
 ![raw_data](figures/raw_data.png "raw_data")
@@ -204,66 +212,78 @@ Browse through the data. Find browsing functions under the Help button.
 You can also change visalization option. Try, for example, to add a low-pass filter to the data`:
 
 ```python
-raw.copy().pick('mag').plot(lowpass=40)
+raw.plot(eve, lowpass=40)
 
 ```
 
 
-## Read raw data
-Now that you have a sense about what is in the data files, it is time to read the actual data.
+## Create trials from raw data
+Now that you have a sense about what is in the data files, it is time to cut out the events of interest.
 
-This is an event-related study, so we want to import data around the events of interest. In FieldTrip this is a two-step procedure. The first step is to specify the trial definition: which triggers do you want to use and what amount of data should be included before and after the trigger. The second step is then to read in the data based on the specified trials in which you also can apply your pre-processing procedure.
+This is an event-related study, so we want to import data around the events of interest. You do this with `mne.Epochs`. You need to specify the time around the triggers that you want to import, which trigger events, and preferably the event name of thouse triggers. You can define a lot of other parameters but we keep it simple for now. Note that the data will not be loaded in memory.
 
-For the first step, you make a trial structure with `ft_definetrial`. You need to specify the time around the triggers that you want to import, which channel it should read the events from (i.e. the trigger channel), and the value(s) of the event you want to read.
+```python
 
-```matlab
-%% Read trial definitions
-infile = fullfile(output_path, filenames{1});
+# %% Create epochs
 
-% define trials
-cfg = [];
-cfg.dataset             = infile;
-cfg.trialdef.prestim    = 2;        % seconds before trigger
-cfg.trialdef.poststim   = 2;        % seconds after trigger
-cfg.trialdef.eventvalue = 8;
-cfg.trialdef.eventtype  = 'STI101';
+tmin = -2  # seconds before trigger
+tmax = 2  # seconds after trigger
 
-cfg = ft_definetrial(cfg);
-```
-`ft_definetrial` does not return a new data structure as its output as most FieldTrip functions, but return a `cfg` structure that we pass on to `ft_preprocessing` in the next step.
+epochs = mne.Epochs(raw, events=eve, event_id=event_id, tmin=tmin, tmax=tmax)
 
-But before you proceed to the next step, take a look at the trial definition that `ft_definetrial` created. You find this is `cfg.trl`.
-
-`cfg.trl` is an Nx4 matrix with each row representing the start sample and end sample of each trial in the raw data, the offset (where in the trial the trigger is, which we will define as time=0 in the subsequent analysis), and the trigger value of the trial. The last column is mainly for bookkeeping and not strictly necessary for the next step. But it is always good to keep track of which trials we are dealing with.
-
-Your `trl` structure might look like this:
-
-| Start sample | End sample | Offset | Trigger value |
-| ----: |------:| -----:| -:|
-| 20788 | 24787 | -2000 | 1 |
-| 24123 | 28122 | -2000 | 1 |
-| 27458 | 31457 | -2000 | 1 |
-| 30794 | 34793 | -2000 | 1 |
-| 34129 | 38128 | -2000 | 1 |
-| *...* | *...* | *...* | *...* |
-
-Try to change `cfg.trialdef.eventvalue` from `8` to one of the other trigger values, e.g. `cfg.trialdef.eventvalue = 2` to see how this change the `trl` definition.
-
-Now we are ready to read in the trials with `ft_preprocessing`. So far, we only want to use `ft_preprocessing` to read data and not to any pre-processing yet. Note that you should not reset config struct (`cfg = []`) for this call: you want the `cfg.trl` that you just created to be parsed to `ft_preprocessing`.
-
-```matlab
-%% Read trials
-cfg.demean      = 'yes';        % basline correct
-cfg.lpfilter    = 'yes';        % Apply low-pass filter
-cfg.lpfreq      = 100;          % Low-pass cut-off frquency in Hz
-cfg.hpfilter    = 'no';         % Do not apply high-pass filter
-cfg.dftfilter   = 'no';
-cfg.chantype    = {'MEG', 'EEG'};  % Which channels to read
-
-data = ft_preprocessing(cfg);
 ```
 
-Look at data structure `data`.
+You can have a look at the events in the epochs by calling `epochs.events`.
+You can also get a summary of the epochs object by callling `epochs`
+
+The epochs were created for all events, but if you for some reason only want epochs from one trigger you can define a new event_id dictonary.
+
+
+```python
+only_index_id = {'Index finger': 8}
+index = mne.Epochs(raw, events=eve, event_id=only_index_id, tmin=tmin, tmax=tmax)
+
+```
+
+Now let's work a bit with the data. 
+Since data is pretty big let's start by downsampling the data to 200Hz and save. Now data needs to be loaded into memory. 
+The resampling will effectivly create a lowpass filter at 100Hz.
+
+
+```python
+
+raw.load_data()
+raw.resample(200)
+raw.save(infile.replace('raw_tsss_mc.fif', 'ds200Hz_raw.fif'))
+
+```
+
+Then we create epochs, now with the downsampled data.
+
+```python
+
+# %% Create epochs
+
+tmin = -2  # seconds before trigger
+tmax = 2  # seconds after trigger
+
+epochs = mne.Epochs(raw, events=eve, event_id=event_id, tmin=tmin, tmax=tmax)
+
+```
+The epochs object contain all the data from all channels and have multiple attributes and methods which can be applied on the epochs.
+
+Explore the different methods by typing `epochs.` followed by tab in the console to see all methods options.
+
+
+There are several ways to visualize the epochs.
+```python
+
+%matplotlib qt  # to not plot inline
+epochs.average().plot()  # butterflyplots
+
+epochs.plot_image()  # image
+
+```
 
 > **Question 1.3:** Explain how the MEG/EEG is data stored in the `data` struct.
 
