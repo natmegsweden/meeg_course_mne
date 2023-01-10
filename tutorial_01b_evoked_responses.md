@@ -6,45 +6,58 @@ In this tutorial, you will continue the processing of MEG/EEG data from the pre-
 2. Average trials to get evoked responses.
 3. Plot and inspect the evoked responses.
 
-## Setup paths
-The first step is to point to the path where we have the data and setup FieldTrip. Change these to appropriate paths for your operating system and setup.
+## Import libraries and setup paths
+The first step is to point to the path where we have the data. Change these to appropriate paths for your operating system and setup. Here I choose to use paths relative to where the scripts are.
 
-```matlab
-clear all
-close all
-restoredefaultpath
-addpath('C:/fieldtrip/')            % Change to match your FieldTrip path
-ft_defaults
+```{python}
+# %% Import modules and set up paths
+import mne
+import os
+from os.path import join, exists, expanduser
+import numpy as np
+import matplotlib.pyplot as plt
 
-meg_path = 'C:/meeg_course/data';   % Change to match your data path
+# project_path = join(expanduser('~'), 'courses/meeg_course_mne') # Change to match your project path
+# meg_path = join(project_path, '../data')   # Change to match your data path
+# figs_path = join(project_path, 'figs')
+
+meg_path = '../data'
+figs_path = 'figures'
+
+print(os.listdir(meg_path))
+print(os.listdir(figs_path))
+
+show_plots = False # Change to True to open plots in browser
+
 ```
 
 Then define the subject and recording specific paths.
 
-```matlab
-%% Define subject paths
-% List of all subjects/session
-subjects_and_dates = ...
-                    {
-                        'NatMEG_0177/170424/'  % add more as needed
-                    };
-           
-% List of all filenames that we will import                
-filenames = {...
-        'tactile_stim_raw_tsss_mc.fif' 
-        'tactile_stim_raw_tsss_mc-1.fif'
-        'tactile_stim_raw_tsss_mc-2.fif'
-            };
+```{python}
+# %% Define subject paths and list of all subjects/session
 
-% Define where to put output data
-output_path = fullfile(meg_path, subjects_and_dates{1}, 'MEG');
+subjects_and_dates = [
+    'NatMEG_0177/170424/'  # Add more subjects as you like, separate with comma    
+    ]
+           
+# List of all filenames that we will import                
+filenames = [
+    'tactile_stim_raw_tsss_mc.fif',
+    'tactile_stim_raw_tsss_mc-1.fif',
+    'tactile_stim_raw_tsss_mc-2.fif'
+            ]
+
+# Define where to put output data
+output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 ```
 
+
 ## Load data
-Load the cleaned MEG/EEG data:
-```matlab
-%% Load data
-load(fullfile(output_path, 'cleaned_downsampled_data.mat')); disp('done');
+```{python}
+# %% Load the data
+
+epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
+epochs = mne.read_epochs(epo_name)
 ```
 
 ## A little more pre-processing
@@ -52,226 +65,167 @@ The data `cleaned_downsampled_data` had data 2 seconds before and after the stim
 
 Since we are interested in the slow evoked responses, we might as well get rid of high-frequency noise: we will apply a 70 Hz lowpass filter before proceeding.
 
-```matlab
-%% Filter data for ERF/ERP
-cfg = [];
-cfg.lpfilter  = 'yes';        % Apply lowpass filter
-cfg.lpfreq    = 70;           % lowpass cutoff frequency in Hz
-
-filt_downsampled_data = ft_preprocessing(cfg, cleaned_downsampled_data)
+```{python}
+hp, lp = None, 70
+epochs.filter(hp, lp)
 ```
+
 Crop trials into time of interest:
 
-```matlab
-%% Crop data to time of interest
-cfg = [];
-cfg.toilim = [-0.200 0.600];
-    
-cropped_data = ft_redefinetrial(cfg, filt_downsampled_data);
+```{python}
+tmin, tmax = -0.200, 0.600
+epochs.crop(tmin=-tmin, tmax=tmax)
 ```
 
-The final step before we average data is to baseline correct data by subtracting the mean of the baseline period from -200 ms to 0. 
-```matlab
-%% Baseline correct
-cfg = [];
-cfg.demean          = 'yes';
-cfg.baselinewindow  = [-0.200 0];
 
-cropped_data_bs = ft_preprocessing(cfg, cropped_data);
+The final step before we average data is to baseline correct data by subtracting the mean of the baseline period from -200 ms to 0. 
+
+```{python}
+baseline = (None, 0)
+epochs.apply_baseline(baseline)
 ```
 
 ## Calculate evoked responses
-The final step is to average over trials with `ft_timelockanalysis`. First, we average the stimulation to the little finger (little finger = trigger value 1).
+The final step is to average over trials with `average()`. We can do all events separate at once by changing `by_event_type` to `True`. Note that this creates a list of evoked responses.
 
-```matlab
-%% Calculate evoked
-% Find trials
-select_trials = cropped_data.trialinfo == 1;    % Which trigger value to use
-
-% Calculate evoked
-cfg = [];
-cfg.trials      = select_trials;
-
-evo = ft_timelockanalysis(cfg, cropped_data_bs);
+```{python}
+evo = epochs.average(by_event_type=True)
 ```
+
 Congratulations, you have now computed evoked responses.
 
 > **Question 1.5:** What is in you newly created `evo` struct? Explain the different fields.
 
 ## Visualize evoked responses
-Use `ft_multiplotER` to plot the ERFs/ERPs. The plots show the averaged responses for all sensors of the given type.
+
+For easy referal to events and visualization it can be handy to put the evoked responses into a dictonary.
+```{python}
+evod = {ev.comment: ev for ev in evo}
+evod['Little finger']
+```
+
+Use `mne.viz.plot_evoked_topo` to plot the ERFs/ERPs. The plots show the averaged responses for all sensors of the given type.
+
+```{python}
+#%% Topo-plots
+# For magnotometers
+fig = mne.viz.plot_evoked_topo(evod['Little finger'].copy().pick_types('mag'), title='Magnotometers',
+                               show=show_plots)
+figname = join(figs_path, 'evoked_mag_topo.png')
+if not exists(figname):
+    fig.savefig(figname)
+
+# For magnotometers
+fig = mne.viz.plot_evoked_topo(evod['Little finger'].copy().pick_types('grad'), title='Gradiometers',
+                               show=show_plots)
+figname = join(figs_path, 'evoked_grad_topo.png')
+if not exists(figname):
+    fig.savefig(figname)
+
+# For EEG
+fig = mne.viz.plot_evoked_topo(evod['Little finger'].copy().pick_types(eeg=True), title='EEG',
+                               show=show_plots)
+figname = join(figs_path, 'evoked_eeg_topo.png')
+if not exists(figname):
+    fig.savefig(figname)
+
+
+```
 
 The plots are interactive. Use your courser to select channels and then click on them to open a new figure that zooms in on the selected channels. You can then highlight parts of the time-series in the same way to open a new figure that shows the topography of that time window. Use this to explore the evoked responses.
 
-```matlab
-%% Plot evoked
-% Magnetometers
-figure
-cfg = [];
-cfg.layout  = 'neuromag306mag.lay';
-cfg.channel = 'megmag';
+![topoplotmag](figures/evoked_mag_topo.png "Topo-plot Magnotometers sensors")
 
-ft_multiplotER(cfg, evo);
+![topoplotgrad](figures/evoked_grad_topo.png "Topo-plot Gradiometers")
 
-% Gradiometers
-figure
-cfg = [];
-cfg.layout  = 'neuromag306planar.lay';
-cfg.channel = 'meggrad';
-
-ft_multiplotER(cfg, evo);
-
-% Electrodes
-figure
-cfg = [];
-cfg.layout  = 'natmeg_customized_eeg1005.lay';
-cfg.channel = 'eeg';
-
-ft_multiplotER(cfg, evo);
-```
-![multiplotERmags](figures/multiplotERmags.png "ft_multiplot magnetometers")
-
-![multiplotERgrad](figures/multiplotERgrad.png "ft_multiplot gradiometers")
-
-![multiplotEReeg](figures/multiplotEReeg.png "ft_multiplot electrodes")
+![topoploteeg](figures/evoked_eeg_topo.png "Topo-plot EEG electrodes")
 
 > **Question 1.6:** Why is it a good idea to plot magnetometers and gradiometers separately? 
-> 
-> You can plot both magnetomenters and gradiomenters in a single plot with `ft_multiplotER` by changeing the layout to `neuromag306all.lay`:
-> ```matlab
-> cfg = [];
-> cfg.layout    = 'neuromag306all.lay';
-> cfg.channel   = 'meg';
-> 
-> ft_multiplotER(cfg, evo);
-> ```
 
-### Combine gradiometers
-If you explore the plots of the gradiometer data, you will notice that the topographies look fragmented, e.g.:
+You can plot both magnetomenters and gradiomenters in a single plot with ` mne.viz.plot_evoked_topomap` by not adding  `.copy().pick_types('grad')`:
 
-![grad_topo](figures/grad_topo.png "Planar gradiometer topography")
-
-This is because the figure shows the values of each gradiometer channel. But the gradiometer channels are arranged in pairs that measure the gradient of the magnetic field in orthogonal directions. This means that each channel in a channel pair can have opposite signs (you can see this clearly in gradiometer plot you made with `ft_multiplotER` above). This is why the topography looks fragmented.
-
-To make sense of the gradiometers, we combine each gradiometer pair to get the absolute value of the gradient:
-
-```matlab
-%% Combine planar gradiometers
-cfg = [];
-cfg.method = 'sum';
-
-evo_combined_planar = ft_combineplanar(cfg, evo);
-```
-Take a look at the combined gradiometers. Notice how these are different from magnetometers and electrodes?
-
-```matlab
-%% Plot combined gradiometers
-figure
-cfg.layout  = 'neuromag306cmb.lay';      % Note the layout is changed
-cfg.channel = 'meggrad';
-
-ft_multiplotER(cfg, evo_combined_planar);
+```{python}
+mne.viz.plot_evoked_topo(evod['Little finger'], show=show_plots)
 ```
 
 ## Interpreting topographies
+Because the gradiometer channels are arranged in pairs that measure the gradient of the magnetic field in orthogonal directions, each channel in a channel pair can have opposite signs (you can see this clearly in gradiometer plot you made with `mne.viz.plot_evoked_topo` above). If you explore the plots of the gradiometer data the RMS of the two gradiometer sensors for each position are used.
+
 Now take a look at the topographies:
 
-```matlab
-%% topoplots
-xlim = [0.057 0.057]   % Single time point (t = 57 ms)
+```{python}
+#%% Topomap plots
+time = 0.057  # Single time point (t = 57 ms)
 
-% plot magnetometers
-figure
-cfg = [];
-cfg.layout      = 'neuromag306mag.lay';
-cfg.channel     = 'MEGMAG';
-cfg.colorbar    = 'yes';
-cfg.xlim        = xlim;
+fig = evod['Little finger'].plot_topomap(times=time, ch_type='mag', colorbar=True)
+figname = join(figs_path, 'evoked_mag_topomap.png')
+if not exists(figname):
+    fig.savefig(figname)
 
-ft_topoplotER(cfg, evo_combined_planar);
-
-% plot gradiometers
-figure;
-cfg = [];
-cfg.layout      = 'neuromag306cmb.lay';
-cfg.channel     = 'MEGGRAD';
-cfg.colorbar    = 'yes';
-cfg.xlim        = xlim;
-
-ft_topoplotER(cfg, evo_combined_planar);
-
-% plot EEG
-figure;
-cfg = [];
-cfg.layout      = 'natmeg_customized_eeg1005.lay';
-cfg.channel     = 'EEG';
-cfg.colorbar    = 'yes';
-cfg.xlim        = xlim;
-
-ft_topoplotER(cfg, evo_combined_planar);
+fig = evod['Little finger'].plot_topomap(times=time, ch_type='grad', colorbar=True)
+figname = join(figs_path, 'evoked_grad_topomap.png')
+if not exists(figname):
+    fig.savefig(figname)
+fig = evod['Little finger'].plot_topomap(times=time, ch_type='eeg', colorbar=True)
+figname = join(figs_path, 'evoked_eeg_topomap.png')
+if not exists(figname):
+    fig.savefig(figname)
 ```
 
-![mag_topo](figures/topo_50_mags.png)
-
-![grad_topo](figures/topo_50_grad.png)
-
-![eeg_topo](figures/topo_50_eeg.png)
+![mag_topo](figures/evoked_mag_topomap.png)
+![grad_topo](figures/evoked_grad_topomap.png)
+![eeg_topo](figures/evoked_eeg_topomap.png)
 
 > **Question 1.7:** Based on the topographies: where do you estimate that are equivalent current dipoles and how many? Hint: remember the right-hand rule and what the different sensor types measure.
 >
 > Note that the EEG topography above is misleading for locating dipoles. Something in the pre-processing did not go right. What might this be? Did you do better? 
 
-## Make evoked for all events
+## Evoked for all events
 
-Now let us look at the ERFs and ERPs for the stimulation on all five fingers. To do this, we run the same code as above but will create a loop that loops over trigger values and store the output in a struct for convenience.
+Now let us look at the ERFs and ERPs for the stimulation on all five fingers. We have already created the evoked responses, in a dict `evod` and in a list `evo`
 
-We have also included noise covariance estimation, which is necessary if you want to combine magnetometers, gradiometers and electrodes when doing source analysis.
+We can also compute the noise covariance estimation, which is necessary if you want to combine magnetometers, gradiometers and electrodes when doing source analysis.
 
-``` matlab
-%% All evoked
-% define events
-events = [1, 2, 4, 8, 16];
-n_events = length(events);
+```{python}
+# %% Create the noise covariance
+noise_cov = mne.compute_covariance(epochs)
 
-% Loop over trigger values
-timelockeds = cell(1, n_events);
-
-for event_index = 1:n_events
-    
-    event = events(event_index);
-    
-    cfg = [];
-    cfg.covariance          = 'yes';
-    cfg.covariancewindow    = 'prestim';
-    cfg.trials = cropped_data_bs.trialinfo == event;
-
-    timelockeds{event_index} = ft_timelockanalysis(cfg, cropped_data_bs);
-    
-end
+# Save the noise covariance matrix
+cov_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-cov.fif')
+mne.write_cov(cov_name, noise_cov, overwrite=True)
 ```
 
 Save the data for later:
 
-```matlab
-%% Save
-save(fullfile(output_path, 'timelockeds'), 'timelockeds');
+```{python}
+#%% Save the epochs
+evo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-ave.fif')
+mne.write_evokeds(evo_name, evo, overwrite=True)
+
 ```
 
 ## Plot all evoked responses in one figure
-You can use `ft_multiplotER` to plot all conditions in the same figure for easy comparison (the `:` symbol means the output of all cells):
+You can use `mne.viz.plot_evoked_topo` to plot all conditions in the same figure for easy comparison:
 
-```matlab
-%% Plot evoked
-% Magnetometers
-figure
-cfg = [];
-cfg.layout  = 'neuromag306mag.lay';
-cfg.channel = 'megmag';
-
-ft_multiplotER(cfg, timelockeds{:});
+```{python}
+# %% For the topo-plot add the list of evoked
+fig = mne.viz.plot_evoked_topo([ev.copy().pick('mag') for ev in evo], title='Magnotometers')
+figname = join(figs_path, 'evoked_mag_all_topo.png')
+if not exists(figname):
+    fig.savefig(figname)
 ```
 
-![multiplot all conditions](figures/multiplotER_all.png)
-![multiplot all conditions](figures/all_erf.png)
+![topo plot all conditions](figures/evoked_mag_all_topo.png)
+
+```{python}
+# %% For the ERF/P plot add the dict or list of evoked
+fig = mne.viz.plot_compare_evokeds(evod, picks='mag')[0]
+figname = join(figs_path, 'evoked_mag_all_erf.png')
+if not exists(figname):
+    fig.savefig(figname)
+```
+
+
+![ERF plot all conditions](figures/evoked_mag_all_erf.png)
 
 ## End of Tutorial 1b
