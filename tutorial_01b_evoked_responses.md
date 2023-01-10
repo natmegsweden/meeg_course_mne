@@ -10,7 +10,7 @@ In this tutorial, you will continue the processing of MEG/EEG data from the pre-
 The first step is to point to the path where we have the data. Change these to appropriate paths for your operating system and setup. Here I choose to use paths relative to where the scripts are.
 
 ```{python}
-# %% Import modules and set up paths
+#%% Import modules and set up paths
 import mne
 import os
 from os.path import join, exists, expanduser
@@ -34,7 +34,7 @@ show_plots = False # Change to True to open plots in browser
 Then define the subject and recording specific paths.
 
 ```{python}
-# %% Define subject paths and list of all subjects/session
+#%% Define subject paths and list of all subjects/session
 
 subjects_and_dates = [
     'NatMEG_0177/170424/'  # Add more subjects as you like, separate with comma    
@@ -54,8 +54,7 @@ output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 
 ## Load data
 ```{python}
-# %% Load the data
-
+#%% Load the data
 epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
 epochs = mne.read_epochs(epo_name)
 ```
@@ -66,6 +65,7 @@ The data `cleaned_downsampled_data` had data 2 seconds before and after the stim
 Since we are interested in the slow evoked responses, we might as well get rid of high-frequency noise: we will apply a 70 Hz lowpass filter before proceeding.
 
 ```{python}
+#%% Filter
 hp, lp = None, 70
 epochs.filter(hp, lp)
 ```
@@ -73,6 +73,7 @@ epochs.filter(hp, lp)
 Crop trials into time of interest:
 
 ```{python}
+#%% Crop
 tmin, tmax = -0.200, 0.600
 epochs.crop(tmin=-tmin, tmax=tmax)
 ```
@@ -81,6 +82,7 @@ epochs.crop(tmin=-tmin, tmax=tmax)
 The final step before we average data is to baseline correct data by subtracting the mean of the baseline period from -200 ms to 0. 
 
 ```{python}
+#%% Baseline adjust
 baseline = (None, 0)
 epochs.apply_baseline(baseline)
 ```
@@ -89,6 +91,7 @@ epochs.apply_baseline(baseline)
 The final step is to average over trials with `average()`. We can do all events separate at once by changing `by_event_type` to `True`. Note that this creates a list of evoked responses.
 
 ```{python}
+#%% Create evokeds
 evo = epochs.average(by_event_type=True)
 ```
 
@@ -100,6 +103,7 @@ Congratulations, you have now computed evoked responses.
 
 For easy referal to events and visualization it can be handy to put the evoked responses into a dictonary.
 ```{python}
+#%% Put evokeds in a dict
 evod = {ev.comment: ev for ev in evo}
 evod['Little finger']
 ```
@@ -128,8 +132,6 @@ fig = mne.viz.plot_evoked_topo(evod['Little finger'].copy().pick_types(eeg=True)
 figname = join(figs_path, 'evoked_eeg_topo.png')
 if not exists(figname):
     fig.savefig(figname)
-
-
 ```
 
 The plots are interactive. Use your courser to select channels and then click on them to open a new figure that zooms in on the selected channels. You can then highlight parts of the time-series in the same way to open a new figure that shows the topography of that time window. Use this to explore the evoked responses.
@@ -145,6 +147,7 @@ The plots are interactive. Use your courser to select channels and then click on
 You can plot both magnetomenters and gradiomenters in a single plot with ` mne.viz.plot_evoked_topomap` by not adding  `.copy().pick_types('grad')`:
 
 ```{python}
+#%%
 mne.viz.plot_evoked_topo(evod['Little finger'], show=show_plots)
 ```
 
@@ -187,20 +190,23 @@ Now let us look at the ERFs and ERPs for the stimulation on all five fingers. We
 We can also compute the noise covariance estimation, which is necessary if you want to combine magnetometers, gradiometers and electrodes when doing source analysis.
 
 ```{python}
-# %% Create the noise covariance
+#%% Create the noise covariance
 noise_cov = mne.compute_covariance(epochs)
 
 # Save the noise covariance matrix
 cov_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-cov.fif')
-mne.write_cov(cov_name, noise_cov, overwrite=True)
+if not exists(cov_name):
+    mne.write_cov(cov_name, noise_cov, overwrite=True)
 ```
 
 Save the data for later:
 
 ```{python}
-#%% Save the epochs
+#%% Save the evokeds
+
 evo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-ave.fif')
-mne.write_evokeds(evo_name, evo, overwrite=True)
+if not exists(evo_name):
+    mne.write_evokeds(evo_name, evo, overwrite=True)
 
 ```
 
@@ -208,7 +214,7 @@ mne.write_evokeds(evo_name, evo, overwrite=True)
 You can use `mne.viz.plot_evoked_topo` to plot all conditions in the same figure for easy comparison:
 
 ```{python}
-# %% For the topo-plot add the list of evoked
+#%% For the topo-plot add the list of evoked
 fig = mne.viz.plot_evoked_topo([ev.copy().pick('mag') for ev in evo], title='Magnotometers')
 figname = join(figs_path, 'evoked_mag_all_topo.png')
 if not exists(figname):
@@ -218,7 +224,7 @@ if not exists(figname):
 ![topo plot all conditions](figures/evoked_mag_all_topo.png)
 
 ```{python}
-# %% For the ERF/P plot add the dict or list of evoked
+#%% For the ERF/P plot add the dict or list of evoked
 fig = mne.viz.plot_compare_evokeds(evod, picks='mag')[0]
 figname = join(figs_path, 'evoked_mag_all_erf.png')
 if not exists(figname):

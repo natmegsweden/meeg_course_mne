@@ -35,7 +35,7 @@ This is an important thing to notice when recording data. It illustrates the nee
 The first step is to point to the path where we have the data. Change these to appropriate paths for your operating system and setup. Here I choose to use paths relative to where the scripts are.
 
 ```{python}
-# %% Import modules and set up paths
+#%% Import modules and set up paths
 import mne
 import os
 from os.path import join, exists, expanduser
@@ -54,13 +54,12 @@ print(os.listdir(figs_path))
 
 
 show_plots = False # Change to True to open plots in browser
-
 ```
 
 Then define the subject and recording specific paths. For now, we only have one subject and session. In principle, we could just define the path as one string variable when we only have one subject. But we introduce this already now as it is a good ´way to organize your data when you have multiple subjects or session. In that case, the cell array `subjects_and_dates` can be expanded to include more subjects, simply by adding the subject ids and session names.
 
 ```{python}
-# %% Define subject paths
+#%% Define subject paths
 # List of all subjects/session
 
 subjects_and_dates = [
@@ -84,6 +83,7 @@ The `fif` files contain everything that was recorded during the recording data, 
 Now it is time to use the first MNE-Python function: use `mne.io.read_info` to read metadata from the `fif` files. Note that this will not read the data yet.
 
 ```{python}
+#%% Show metadata
 infile = join(output_path, filenames[0])
 info = mne.io.read_info(infile)
 print(info)
@@ -92,6 +92,7 @@ print(info)
 The info object is like a python dictionary and contains information about the data. Explore the struct to find out what is in the data file.
 
 ```{python}
+#%% info example
 info.keys()
 info['ch_names']
 ```
@@ -106,7 +107,7 @@ for file in ['file.fif', 'file-b.fif', 'file-c.fif']:
 raw.save('filename')
 
 ```{python}
-# %%
+# %% import raw
 raw = mne.io.read_raw_fif(infile)
 raw # check raw file
 raw.info # Check info, same as the info object above
@@ -144,6 +145,7 @@ But knowing what the values represent is one thing. Another is to see how they a
 To inspect trigger values we use `mne.find_events()` in the raw-file. Now use `mne.find_events()` to read the events (i.e. triggers) in the file you specified above:
 
 ```{python}
+#%% Find events
 eve = mne.find_events(raw)
 ```
 
@@ -154,7 +156,7 @@ Look at the `eve` structure:
 Because there are several trigger channels in the data, MNE-Python automatically finds the composite channel 'STI101'. If you bump into another configuration or you need other event channels you can specify which stim channel to read data from with `stim_channel`.
 
 ```{python}
-# Find only the relevant channel
+#%% Find only the relevant channel
 eve = mne.find_events(raw, stim_channel = 'STI101')
 ```
 
@@ -163,6 +165,7 @@ eve = mne.find_events(raw, stim_channel = 'STI101')
 The trigger for the delivery of the tactile stimulation is sent with millisecond precision to the stimulation device and the MEG data acquisition software. However, because we cannot have electrical parts within the magnetically shield room, the stimulus is powered by pressurized air. This means that there is a delay from the device that received the trigger to the actual delivery of the sensory stimulation. The delay has been measured with an accelerometer to 41 ms. There is no way to know this from the data, and if we did not know, we might think that this subject had oddly slow event-related activity. Run the following code to fix this. 
 
 ```{python}
+#%% Adjust time (only relevant for this data set)
 adjust_timeline_by_msec = 41
 eve[:,0] = [ts + np.round(adjust_timeline_by_msec * 10**-3 * raw.info['sfreq']) for ts in eve[:, 0]]
 ```
@@ -174,11 +177,10 @@ The event data structure is an array consisting of:
 The middle column is almost always 0, basically indicating that the event is not overlapping more than one sample.
 
 ```{python}
-# %% See unique events
+#%% See unique events
 np.unique(eve[:,-1])
 
-# %% Make a summary table of event count
-
+# Make a summary table of event count
 np.unique(eve[:,-1], return_counts=True)
 ```
 
@@ -187,6 +189,7 @@ In addition to knowing how many trials we have of each type, we also want to kno
 Since the trigger values might tell you nothing you can add event ID's to the trigger values by defining them in a dictionary. This is useful later when plotting and creating epochs. We will comment out events that are not fingers.
 
 ```{python}
+#%% Set event names
 event_id = {'Little finger': 1,
             'Ring finger': 2,
             'Middle finger': 4,
@@ -200,7 +203,7 @@ event_id = {'Little finger': 1,
 Now plot the triggers across time:
 
 ```{python}
-# %% Plot
+# %% Plot events
 fig = mne.viz.plot_events(eve, event_id=event_id)
 figname = join(figs_path, 'triggers.png')
 if not exists(figname):
@@ -215,7 +218,7 @@ Now that you have a sense about what is in the data files, it is time to take a 
 There are several parameters which you can change in the plot functtion. First, plot all channels and show the events. Then pick only a subset of the channels. when using `pick` you have to do this on a copy of the object.
 
 ```{python}
-# %% Inspect raw data
+#%% Inspect raw data
 raw.plot(events=eve, event_id=event_id, show=show_plots)  # Note that all channels are plotted, change show=True to view plot
 
 figname = join(figs_path, 'raw_data.png')
@@ -231,6 +234,7 @@ Browse through the data. Find browsing functions under the Help button.
 You can also change visalization option. Try, for example, to add a low-pass filter to the data`:
 
 ```{python}
+#%% Show filtered raw
 raw.plot(eve, lowpass=40, show=show_plots)
 ```
 
@@ -240,8 +244,7 @@ Now that you have a sense about what is in the data files, it is time to cut out
 This is an event-related study, so we want to import data around the events of interest. You do this with `mne.Epochs`. You need to specify the time around the triggers that you want to import, which trigger events, and preferably the event name of thouse triggers. You can define a lot of other parameters but we keep it simple for now. Note that the data will not be loaded in memory.
 
 ```{python}
-# %% Create epochs
-
+#%% Create epochs
 tmin = -2  # seconds before trigger
 tmax = 2  # seconds after trigger
 
@@ -254,6 +257,7 @@ You can also get a summary of the epochs object by callling `epochs`
 The epochs were created for all events, but if you for some reason only want epochs from one trigger you can define a new event_id dictonary.
 
 ```{python}
+#%% Select only one event
 only_index_id = {'Index finger': 8}
 index = mne.Epochs(raw, events=eve, event_id=only_index_id, tmin=tmin, tmax=tmax)
 ```
@@ -263,8 +267,7 @@ Now let's work a bit with the data.
 
 
 ```{python}
-# %% Create epochs
-
+#%% Create downsampled epochs
 epochs.decimate(5)
 epochs.load_data() # load data
 ```
@@ -280,6 +283,7 @@ In MNE-python data from all split-files are automatically read. This is conserve
 Lets save the `epochs` and load the data.
 
 ```{python}
+#%% Save/load epochs
 epo_name = join(output_path, 'tactile_stim_ds200Hz-epo.fif')
 if not exists(epo_name):
     epochs.save(epo_name, overwrite=True)
@@ -293,6 +297,7 @@ else:
 You can use plots to visually inspect data after we have segmented it into trials. This time we make a "butterflyplot" by averaging, but there are several other plot options like eg. `plot_image()`. Define `picks` in as argument if you want specific channel types, otherwise all MEG and EEG types are plotted. `spatial colors` gives you an indication of the distribution over the head.
 
 ```{python}
+#%% Plot epochs
 # Butterflyplots
 # Plot MEG and EEG
 
@@ -320,6 +325,7 @@ You can add visual pre-processing options using the `plot` as before.
 Try inspect the data and see if you can identify some bad electrodes (and MEG sensors). If you want to note bad channels you can edit the `epochs.info['bads']` object, which is a list, so be careful not to replace previous information, instead you can use `epochs.info['bads'].extend()`.
 
 ```{python}
+#%% Plot epochs (continue)
 epochs.plot(show=show_plots)
 # While in the plot, show inspection alternatives by pressing '?'
 # eg. press 'h' to see the peak-to-peak amplitude
@@ -335,6 +341,7 @@ These steps are specific for EEG:
 The bad electrodes will mess up our analysis if left in. There are many ways to detect and deal with artifacts. You can use `epochs.plot()` and manually mark channels or epochs as bad by pressing on them. You can set a rejection thresholds based on the peak-to-peak amplitude.
 
 ```{python}
+#%% Select channels and set bad channels for interpolation
 eeg = epochs.copy().pick_types(eeg=True)
 
 eeg.average().plot_image(show=show_plots)
@@ -356,7 +363,7 @@ In general, there is no need to work with the MEG and EEG as separate objects as
 The bad electrodes will be interpolated with the spherical spline method.
 
 ```{python}
-
+#%% Interpolate bad channels
 epochs_ip = epochs.copy().interpolate_bads()
 
 ```
@@ -364,7 +371,7 @@ epochs_ip = epochs.copy().interpolate_bads()
 Plot the interpolated and non-interpolated EEG data. Can you spot the differences?
 
 ```{python}
-
+#%% Compare interpolated
 epochs.average().plot(picks='eeg', exclude='', show=show_plots)  # exclude='bads' default 
 epochs_ip.average().plot(picks='eeg', exclude='', show=show_plots)
 
@@ -376,7 +383,7 @@ The reference for the EEG signals has a great impact on how the signals appear. 
 In the tutorial data, EEG was recorded with the FCz electrode as reference. This is almost above the sensorimotor areas so not ideal for looking at sensory potentials as we will in this tutorial. Therefore we re-reference the EEG data. We will use a reference consisting of the average of all channels with `epochs_ip.set_eeg_reference(ref_channels='average')`. We could have done this step already on the raw data above, but for now let's do it on the epochs data. We apply the new average reference on the epochs with interpolated channels.
 
 ```{python}
-
+#%% Add reference to EEG
 # Plot with FCz reference
 epochs_ip.copy().pick_types(eeg=True).plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
 
@@ -399,7 +406,7 @@ Removing bad trials is not as straight forward using MNE-Python compared to Fiel
 Find thresholds that is suitable for your data. You might have to play around a little to find reasonable thresholds. Use `epochs_ip.plot()` then 'h' to see a histogram of the peak-to-peak amplitudes and set appropriate rejection thresholds.
 
 ```{python}
-
+#%% Remove trials based on thresholds
 reject_criteria = dict(mag=5500e-15,    # 5500 fT
                        grad=2000e-13,    # 2000 fT/cm
                        eeg=600e-6,      # 600 µV
@@ -425,32 +432,9 @@ An another way to inspect data and remove artifacts is to use the `autoreject` p
 By now we have some data in memory which we don't need, so lets clean up a bit before moving on.
 
 ```{python}
-
+#%% Clear some memory
 del(eeg, index, epochs, epochs_ip, raw)
-
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## Advanced pre-processing: independent component analysis (ICA)
 Independent component analysis (ICA) is a decomposition method that breaks data into statistically independent components. ICA is useful for identifying patterns of activity that occur regularly in the data. ICA has many applications in MEG/EEG analysis. The most common use is to identify activity related to eye-blinks and heart-beats. These are part of the signal that we (usually) do not want.
@@ -460,7 +444,7 @@ Before running ICA it is recommended to apply a high-pass filter on the data of 
 The code below shows how to remove eye-blinks and heart-beats from the MEG data.
 
 ```{python}
-
+#%% ICA fit
 # Since this is a very time consuming process, lets load the saved ICA-file if we have one from earlier.
 ica_name = join(output_path, 'tactile_stim_ds200Hz-ica.fif')
 raw_ds_name = join(output_path, 'tactile_stim_ds200Hz_hp1Hz-raw.fif')
@@ -499,7 +483,7 @@ for channel_type, ratio in explained_var_ratio.items():
 Plot the components (if plot is interactive you can bring up component properties):
 
 ```{python}
-
+#%% ICA plots
 ica.plot_sources(raw) # right click the component name to view its properties
 ica.plot_components(inst=raw) # click the components to view its properties
 # or
@@ -510,15 +494,15 @@ ica.plot_properties(raw, picks=[0, 1])
 See if you can find components that correspond to eye-blinks and heart-beats from the component topographies and component time-series? When you have found the components that correspond to eye-blinks and heart-beats, you can remove by adding them to the list `ica.exclude`:
 
 ```{python}
-
+#%% Exclude components
 ica.exclude = [0, 1]
-
 ```
 
 
 
-
+<!-- 
 ```{python}
+#%% 
 ica.exclude=[]
 ica_comps = mne.make_fixed_length_epochs(ica.get_sources(raw), duration=1)
 ica_psd = ica_comps.compute_psd('welch', picks='all', fmax=60, window='hann', n_fft=200)
@@ -528,12 +512,9 @@ ica_data = ica_comps.get_data()
 fig, ax = plt.subplots()
 ax.imshow(abs(ica_psd_data.mean(0)), aspect='auto')
 
-
 ica_comps.plot_image('all')
-
-
 ```
-
+ -->
 
 
 ### Semi-automatic detection of ECG components
@@ -541,7 +522,7 @@ The following code will find the components that show similarity to the ECG sign
 
 
 ```{python}
-
+#%% Semi-automated ECG detection
 # Clear the manual list
 ica.exclude = []
 
@@ -555,7 +536,7 @@ if not exists(figname):
 
 for ecg in ecg_indices:
     fig = ica.plot_properties(raw, picks=ecg, show=show_plots)[0]
-    figname = join(figs_path, f'ica_ecg_comp_propch{ecg}.png')
+    figname = join(figs_path, f'ica_ecg_comp_propch_{ecg}.png')
     if not exists(figname):
         fig.savefig(figname)
 
@@ -570,7 +551,6 @@ if not exists(figname):
 
 ![ica_ecg_comp_score](figures/ica_ecg_comp_score.png "ECG ICA component score")
 
-
 ![ecg_ica_comp_prop](figures/ica_ecg_comp_prop_ch20.png "ECG component properties")
 
 ![ecg_evoked](figures/ecg_evoked.png "ECG evoked")
@@ -580,7 +560,7 @@ The following code will find the components that show similarity to the EOG sign
 
 
 ```{python}
-
+#%% Semi-automated EOG detection
 eog_indices, eog_scores = ica.find_bads_eog(raw)
 ica.exclude.extend(eog_indices)
 
@@ -607,6 +587,7 @@ if not exists(figname):
 ![ica_eog_comp_score](figures/ica_eog_comp_score.png "EOG ICA component score")
 
 ![eog_ica_comp_prop](figures/ica_eog_comp_prop_ch0.png "EOG component properties")
+
 ![eog_ica_comp_prop](figures/ica_eog_comp_prop_ch15.png "EOG component properties")
 
 ![eog_evoked](figures/eog_evoked.png "EOG evoked")
@@ -617,6 +598,7 @@ Finally we remove the ECG and EOG componets by applying the ICA on (a copy of) t
 
 
 ```{python}
+#%% Apply ICA
 # Make sure you have added the components to the list
 ica.exclude
 
@@ -629,7 +611,7 @@ ica.apply(epochs_clean_ica)
 Finally, save the data:
 
 ```{python}
-
+#%% Save cleaned epochs
 epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
 if not exists(epo_name):
     epochs_clean_ica.save(epo_name, overwrite=True)
@@ -638,5 +620,3 @@ if not exists(epo_name):
 
 ## End of Tutorial 1a...
 Congratulations, you have now imported and prepared MEG and EEG. The tutorial continues in **Tutorial 1B: evoked responses**, where you will continue the processing on the data to get the evoked responses.
-
-![teaser](figures/timelockeds_multiplot3.png)
