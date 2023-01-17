@@ -56,6 +56,6 @@ The tutorial material was originally created for FieldTrip 2018-2020 by
 
 The attempt to port the tutorials to MNE-Python was done by Andreas Gerhardsson
 
-If you discover errors in the tutorials, code that won't run, or similar, please post your errors to: andreas.gerhardsson@ki.se
+If you discover errors in the tutorials, code that won't run, or similar, please post your errors under issues.
 
 
