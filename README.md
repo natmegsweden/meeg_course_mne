@@ -54,7 +54,7 @@ The tutorial material was originally created for FieldTrip 2018-2020 by
 * Lau M. Andersen, CFIN, Aarhus University (www.laumollerandersen.org/).
 * Robert Oostenveld, Donders Institute for Brain, Cognition and Behaviour, Radboud University.
 
-The attempt to port the tutorials to MNE-Python was done by Andreas Gerhardsson
+The attempt to port the tutorials to MNE-Python was started by Andreas Gerhardsson
 
 If you discover errors in the tutorials, code that won't run, or similar, please post your errors under issues.
 
