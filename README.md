@@ -48,7 +48,7 @@ For the course  *Imaging in Neuroscience: with a focus on MEG and EEG Methods* y
 
 All material is free to use under general license. 
 
-The tutorial material is created 2018-2020 by
+The tutorial material was originally created for FieldTrip 2018-2020 by
 
 * Mikkel C. Vinding, NatMEG, Karolinska Insitutet.
 * Lau M. Andersen, CFIN, Aarhus University (www.laumollerandersen.org/).
@@ -56,6 +56,6 @@ The tutorial material is created 2018-2020 by
 
 The attempt to port the tutorials to MNE-Python was done by Andreas Gerhardsson
 
-If you discover errors in the tutorials, code that won't run, or similar, please post your errors to: andreas.gerhardsson@ki.se
+If you discover errors in the tutorials, code that won't run, or similar, please post your errors under issues.
 
 
