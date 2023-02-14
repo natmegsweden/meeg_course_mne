@@ -52,7 +52,6 @@ figs_path = 'figures'
 print(os.listdir(meg_path))
 print(os.listdir(figs_path))
 
-
 show_plots = False # Change to True to open plots in browser
 ```
 
@@ -350,7 +349,7 @@ eeg.average().plot_topo(show=show_plots)
 eeg.average().plot(show=show_plots)
 
 # Add the bad channels to the list
-bad_chs = ['EEG027', 'EEG003', 'EEG008', 'EEG034', 'EEG096']
+bad_chs = ['EEG027', 'EEG003', 'EEG008', 'EEG034', 'EEG096', 'MEG0121', 'EEG040', 'EEG079']
 epochs.info['bads'].extend(bad_chs)
 ```
 
@@ -409,7 +408,7 @@ Find thresholds that is suitable for your data. You might have to play around a 
 #%% Remove trials based on thresholds
 reject_criteria = dict(mag=5500e-15,    # 5500 fT
                        grad=2000e-13,    # 2000 fT/cm
-                       eeg=600e-6,      # 600 µV
+                       eeg=500e-6,      # 500 µV
                     #  eog=300e-6       # 300 µV
                        ) 
 flat_criteria = dict(mag=1e-15,         # 1 fT
