@@ -82,7 +82,7 @@ python ...
 Save data after each processing step. Especially before and after steps that require manual intervention. This makes it easier to go back and redo individual steps without the need to re-run everything again.
 
 ## Visualize results of intermediate processing steps
-Thought the tutorial you will be asked a lot to plot data and inspect data structures. This is not just to keep you occupied! It is good practice to visuale the outcome of each processing step (when you also would save the data). When you visualize the output of each processing step, it is easy to spot errors as they occur rahter than only noticing them in the end results—if you even notice them at all by then.
+Thought the tutorial you will be asked a lot to plot data and inspect data structures. This is not just to keep you occupied! It is good practice to visualize the outcome of each processing step (when you also would save the data). When you visualize the output of each processing step, it is easy to spot errors as they occur rather than only noticing them in the end results—if you even notice them at all by then.
 
 ## Use consistent filenames
 Do not rename files each time you run the analysis. Use a consistent way to easy read what subject, session, and processing step the data belongs to. For example, output files from an analysis might look like this:

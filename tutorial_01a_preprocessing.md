@@ -262,13 +262,14 @@ index = mne.Epochs(raw, events=eve, event_id=only_index_id, tmin=tmin, tmax=tmax
 ```
 
 Now let's work a bit with the data.
-> A large dataset in your computers memory and can cause it become very slow to the point that it will crash. Therefore we decimate the epochs by a factor of 5, witch effectively reduces the sample rate to 200Hz.
+> A large dataset in your computers memory and can cause it become very slow to the point that it will crash. Therefore we resample the epochs to 200Hz, reducing the number of data points by a factor of 5. 
 
 
 ```{python}
 #%% Create downsampled epochs
-epochs.decimate(5)
 epochs.load_data() # load data
+epochs.resample(200)
+
 ```
 
 The epochs object contain all the data from all channels and have multiple attributes and methods which can be applied on the epochs.
@@ -463,7 +464,7 @@ if exists(ica_name):
 else:
     ica = mne.preprocessing.ICA(n_components=40,
                                 method='fastica',
-                                random_state=99)
+                                random_state=99) #by specifiying the random_state, we get the same result if we run the code again
     ica.fit(raw, picks='meg') # Using only the MEG channels
     # Save the ICA object
     
