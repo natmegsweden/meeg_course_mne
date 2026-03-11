@@ -125,7 +125,7 @@ Now we will do the same analysis, but use tapers based on Slepian sequences of t
 
 ```{python}
 method = 'multitaper'
-bandwidth = 4
+bandwidth = 4       # ±2 Hz smoothing
 fmin = 1
 fmax = 95
 
@@ -138,7 +138,7 @@ Try to change the frequency smoothing range to e.g 20 Hz.
 
 ```{python}
 method = 'multitaper'
-bandwidth = 20
+bandwidth = 20      # ±10 Hz smoothing
 fmin = 1
 fmax = 95
 
@@ -221,7 +221,7 @@ tfr_hann = mne.time_frequency.tfr_multitaper(thumb, freqs=freqs, n_cycles=n_cycl
 ```
 
 ```{python}
-fig = tfr_hann.average().plot_topo(picks='mag', mode='logratio', cmap='jet')
+fig = tfr_hann.plot_topo(picks='mag', mode='logratio', cmap='jet')
 
 figname = join(figs_path, 'TFR_noBaseline.png')
 if not exists(figname):
