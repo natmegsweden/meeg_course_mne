@@ -149,3 +149,55 @@ mne.viz.set_3d_view(fig, 45, 90, distance=0.6, focalpoint=(0.0, 0.0, 0.0))
 ```
 ![mri_digi_alignment_viz](figures/mri_digi_alignment_viz.png)
 
+## Make Head Models
+If there aren't any issues with how everything aligned, we can continue to the actual creation of the head models.
+
+We will make two different head models, one for MEG and one for EEG. MNE-Python allows you to specify the conductivity of each layer which defines how many layers it will include. 
+
+For MEG, we only need one layer. Here we create the model and then save the solution for later use in source reconstruction.
+
+```{python}
+meg_model = mne.make_bem_model(subject='170424',
+                                   conductivity= [0.3], # One layer is enough for MEG
+                                   subjects_dir=subjects_dir
+                                   )
+
+meg_bem = mne.make_bem_solution(meg_model)
+mne.write_bem_solution(join(output_path, '170424-meg-bem-sol.fif'), meg_bem) #remember to indicate that it's the solution for MEG only
+```
+
+For EEG, we need something more complicated. However, it's still the same code! Just with more conductivity values in the function call.
+
+```{python}
+eeg_model = mne.make_bem_model(subject='170424',
+                                   conductivity=[0.3, 0.006, 0.3], #defaults in MNE for EEG head models
+                                   subjects_dir=subjects_dir
+                                   )
+eeg_bem = mne.make_bem_solution(eeg_model)
+mne.write_bem_solution(eeg_bem, join(output_path, '170424-eeg-bem-sol.fif'), eeg_bem) #remember to indicate that it's the solution for EEG only
+```
+
+An alternative to making a head model from an MRI is to make a spherical model. In MNE-Python, you can make the sphere model a similar size to the participant head using `auto` for the values of `r0` and `head_radius`. All you need to do this is an `info` object like `epochs.info` that the function can use to find a rough head shape.
+
+```{python}
+sphere = mne.make_sphere_model(info=epochs.info, r0 = 'auto', head_radius= 'auto') 
+```
+
+Now visualize this spherical head model. 
+
+```{python}
+mne.viz.plot_alignment(
+    epochs.info, 
+    trans=trans,
+    eeg='projected',
+    bem=sphere,
+    dig=True,
+    surfaces="outer_skin",
+    coord_frame='meg',
+    show_axes=True
+)
+```
+![spherical_head_model_alignment](figures/spherical_head_model_alignment.png)
+
+
+
