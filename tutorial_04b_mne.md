@@ -1,3 +1,6 @@
+# Dev Notes
+Make sure the file names are descriptive enough to refer back to later; get the leadfield from dipole fitting with a good name
+
 # Minimum-Norm Estimate (MNE)
 In this tutorial, you will do source reconstruction with Minimum-Norm Estimates (MNE). This method is related to dipole fits but more advanced in that it assumes dipoles distributed equally over the cortex that all, to some extent, are active at any point in time.
 
@@ -108,5 +111,41 @@ mne_fwd = mne.make_forward_solution(
 mne.write_forward_solution(join(output_path, 'tactile_stim_ds200Hz-meg-oct-6-mne-fwd.fif'), mne_fwd)
 ```
 ### Compare with the volumetric source space and forward solution we made in the dipole fitting tutorial 
+> Wants a visualized cloud of points for comparison
 
+## Make an ad hoc covariance for our solutions
+There are multiple methods to make a noise covariance matrix for source localization. In this tutorial, we will just do an ad hoc covariance calculation. It assumes a reasonable level of noise, but isn't tied to the data.
 
+```{python}
+ad_hoc_cov = mne.make_ad_hoc_cov(evo[3].info)
+```
+## Inverse Solution
+### Start with the inverse operator
+The inverse operator sets up the formula and variables that will be used to calculate the inverse solution in the next step. It's separate to allow for reuse of the same operator on multiple conditions or time windows. 
+
+For this calculation, we're only going to look at the gradiometers in our MEG data.
+
+```{python}
+evoked_grad = evo[3].copy().pick('grad')
+noise_cov_grad = ad_hoc_cov.copy().pick_channels(evoked_grad.ch_names)
+
+inverse_operator = mne.minimum_norm.make_inverse_operator(
+    evoked_grad.info,
+    forward=mne_fwd,
+    noise_cov=noise_cov_grad,
+    loose=0.2, 
+    depth=0.8
+)
+```
+The parameters `loose` and `depth` define what kind of assumptions the model makes about what sources it sees. 
+
+`Loose` defines whether we are assuming our sources have only one component normal to the cortical surface (`loose=0`) or if they can be be in any orientation and have three components (`loose=1`). `loose 0.2` assumes that normal components are the most influential (since we're looking at MEG), but that we should consider some deviation from other components.
+
+`Depth` defines how heavily our operator is weighting deeper sources. MNE has a bias toward more superficial sources (even a bias to gyral crowns versus sulcal walls!), so we have to add an extra parameter to make sure our sources are considered equally. The `depth` parameter can take a value between 0 and 1, with 0.8 being a standard default correction. `depth=0.8` is enough of a correction to reduce the superficial bias, but doesn't strongly amplify noise in the data, like `depth=1` can.
+
+```{python}
+mne.minimum_norm.write_inverse_operator(
+    "tactile_stim_ds200Hz-meg-oct-6-grad-mne-inv.fif", inverse_operator
+)
+```
+### Now apply the inverse operator to our data of interest
