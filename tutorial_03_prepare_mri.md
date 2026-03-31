@@ -112,6 +112,15 @@ A BEM, or boundary element model, is a method of defining compartments of the he
 
 ```{python}
 subject = "170424"
+
+# make high resolution scalp surface for better coregistration
+mne.bem.make_scalp_surfaces(
+    subject=subject,
+    subjects_dir=subjects_dir,
+    overwrite=True,
+    no_decimate=True, 
+    mri='T1.mgz')
+
 mne.bem.make_watershed_bem(
     subject=subject,
     subjects_dir=subjects_dir,
