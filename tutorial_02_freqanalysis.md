@@ -63,7 +63,7 @@ epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
 epochs = mne.read_epochs(epo_name)
 ```
 
-> **Question 2.1:** previosuly we downsampled data to 200Hz. As a consequence hereof, what is the highest frequency we can investigate in this data?
+> **Question 2.1:** Previously we downsampled data to 200Hz. As a consequence hereof, what is the highest frequency we can investigate in this data?
 
 ## Select data
 The In the following tutorial, we will only analyse the conditions where the thumb was stimulated. Lets create a separate instance with only the thumb.

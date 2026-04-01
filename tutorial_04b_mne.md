@@ -144,8 +144,99 @@ The parameters `loose` and `depth` define what kind of assumptions the model mak
 `Depth` defines how heavily our operator is weighting deeper sources. MNE has a bias toward more superficial sources (even a bias to gyral crowns versus sulcal walls!), so we have to add an extra parameter to make sure our sources are considered equally. The `depth` parameter can take a value between 0 and 1, with 0.8 being a standard default correction. `depth=0.8` is enough of a correction to reduce the superficial bias, but doesn't strongly amplify noise in the data, like `depth=1` can.
 
 ```{python}
+# Save the operator
 mne.minimum_norm.write_inverse_operator(
     "tactile_stim_ds200Hz-meg-oct-6-grad-mne-inv.fif", inverse_operator
 )
 ```
 ### Now apply the inverse operator to our data of interest
+```{python}
+method = "MNE"
+snr = 3.0 
+lambda2 = 1.0 / snr**2
+stc, residual = mne.minimum_norm.apply_inverse(
+    evoked_grad,
+    inverse_operator,
+    lambda2,
+    method=method,
+    pick_ori=None,
+    return_residual=True
+)
+```
+Look at the structure of `stc`.
+> **Question 4.4:** What is in the output structure? What are the dimensions of the data and what do they represent?
+
+```{python}
+# Save data
+stc.save(join(output_path, 'tactile_stim_ds200Hz-meg-grad-mne'))
+```
+## Visualize MNE source reconstruction results
+### Identify points of interest
+
+Plot the MNE source reconstruction on the grid. The `stc` structure contains values for all grid points and all time points. To visualize the source reconstruction on the grid, we need to decide what time points to plot.
+
+From previous tutorials, you probably have some points of interest in mind, but let's look at the evoked plot again. Feel free to change the times to look at the topographies of other time points.
+
+```{python}
+times = (0.055, 0.150, .180)
+evo[3].plot_joint(times=times, picks='grad')
+```
+!['evo3_grad_mne_times'](figures/evo3_grad_mne_times.png)
+
+Use what we've learned to think about what the sources might look like at the timepoints you've selected.
+
+### View points of interest
+
+The following plotting method has many parameters that you can change to create a visualization that looks good to you. For example, to look at just one timepoint, you can use `time_viewer=False` (`time_viewer=True` will let you scroll over the whole evoked length) in the following method. Let's look at a time period you thought looked interesting from the previous step. 
+
+```{python}
+stc.plot(
+    subject=subject,
+    subjects_dir=subjects_dir,
+    hemi='both',
+    surface='pial',
+    time_viewer=False,
+    initial_time=0.053,   
+    colormap='jet',       
+    colorbar=False,
+    src=src       
+)
+```
+
+!['stc_time_053'](figures/stc_time_053.png)
+
+> **Question 4.5:** At a glance, where do you see activated sources? How many different cortical patches are "active" at this time point (Note: your visualization might look different depending on your processing or plotting specifications)
+
+This image shows a single time point for all estimated sources. Each source (i.e., each grid-point on the cortical surface) has a time series of activation. You can in principle treat each source as its own "channel" -- you can view the activation of all sources over time, analogous to the activation in MEG or EEG channels. Here we plot source activation across time (only plotting 1/100 of the sources for clarity)
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(1e3 * grad_stc.times, grad_stc.data[::100, :].T)
+ax.set(xlabel="time (ms)", ylabel=f"{method} value")
+```
+
+!['source_plot_grads'](figures/source_plot_grads.png)
+
+Now, let's view the time course as an animation. Again, there are many parameters you can change to have an animation that looks much different. For an example, try out different numbers for`smoothing_steps`. How does it change the visualization?
+
+```{python}
+grad_stc.plot(
+    subjects_dir=subjects_dir,
+    initial_time=0,
+    time_viewer=True,
+    hemi='both',
+    surface='pial',
+    smoothing_steps=3,
+    src=src
+)
+```
+
+While in the visualization window, experiment with the different color limits and surface types.
+
+It is difficult to answer what type of source model and source reconstruction method that is better. The matter model depends on the question you want to answer and the kind of signal you are interested in for the particular answer. For example, if you know that a focal patch of cortex generates the signal, then a single dipole model might be sufficient, and you do not gain extra information by including the entire cortex. Similar, if we know that the process we are interested in requires distributed sources, then it is not valid to assume that a single dipole is sufficient.
+
+> **Question 4.6:** In your question document, include two pictures. The first should be of a time point where a dipole model could be sufficient for characterizing the activity. The second should be a time period where a distributed model is better.
+
+## End of Tutorial 4b
+
+This tutorial demonstrates how to do MNE source reconstruction. Compared to the dipole (and beamformer, as you will see later) it differs in how to prepare the source model because of the assumptions behind MNE. But the additional assumption means that MNE is a quite robust source reconstruction method.
