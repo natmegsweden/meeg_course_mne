@@ -236,6 +236,25 @@ You can also change visalization option. Try, for example, to add a low-pass fil
 #%% Show filtered raw
 raw.plot(eve, lowpass=40, show=show_plots)
 ```
+## Filter raw data
+In additionally to visually manipulating the data, you can make changes to aid your analysis. For example, we are going to filter out a specific frequency from our data because it is noise from the electricity that we use every day! 
+
+In Sweden, this is 50Hz, so we use `notch_filter(50)` to cut out a single frequency (or a list if you include the harmonics 100, 150, etc). In the method `notch_filter`, MNE-Python has built in transition zone to reduce the likelihood of artifacts from the filter in future analyses. 
+
+We will also use a bandpass filter calling the method `filter(1,95)` to only take the frequencys between 1 Hz and 95 Hz. There are a couple of reasons you might do this in your own pipelines. One reason could be that you're only interested in a specific frequency window (like alpha, 8-12Hz) or you notice a slow change in the signal overtime, called a slow drift. Since we're often not interested in the lowest or highest frequency signals, preprocessing pipelines filter them out to better analyze the signals of interest. 
+
+In our case, we want to see the response to a tactile stimulation. Using filters relies on having some prior knowledge about what is considered noise and what your signal of interest looks like. For this tutorial, we will filter out very low (less than 1Hz) and very high (greater than 95). 
+
+```{python}
+raw_filtered_fname = join(output_path, 'tactile_stim_hp1Hz_lp95Hz-raw.fif')
+
+if exists(raw_filtered_fname):
+    raw_filtered = mne.io.read_raw_fif(raw_filtered_fname)
+else:
+    raw_filtered = raw.copy().notch_filter(50)
+    raw_filtered.filter(1, 95)
+    raw_filtered.save(raw_filtered_fname)
+```
 
 ## Create trials from raw data
 Now that you have a sense about what is in the data files, it is time to cut out the events of interest.
@@ -247,7 +266,7 @@ This is an event-related study, so we want to import data around the events of i
 tmin = -2  # seconds before trigger
 tmax = 2  # seconds after trigger
 
-epochs = mne.Epochs(raw, events=eve, event_id=event_id, tmin=tmin, tmax=tmax)
+epochs = mne.Epochs(raw_filtered, events=eve, event_id=event_id, tmin=tmin, tmax=tmax)
 ```
 
 You can have a look at the events in the epochs by calling `epochs.events`.
@@ -258,7 +277,7 @@ The epochs were created for all events, but if you for some reason only want epo
 ```{python}
 #%% Select only one event
 only_index_id = {'Index finger': 8}
-index = mne.Epochs(raw, events=eve, event_id=only_index_id, tmin=tmin, tmax=tmax)
+index = mne.Epochs(raw_filtered, events=eve, event_id=only_index_id, tmin=tmin, tmax=tmax)
 ```
 
 Now let's work a bit with the data.
@@ -284,9 +303,9 @@ Lets save the `epochs` and load the data.
 
 ```{python}
 #%% Save/load epochs
-epo_name = join(output_path, 'tactile_stim_ds200Hz-epo.fif')
+epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-epo.fif')
 if not exists(epo_name):
-    epochs.save(epo_name, overwrite=True)
+    epochs.save(epo_name)
 
 else:
     epochs = mne.read_epochs(epo_name)
@@ -419,7 +438,7 @@ flat_criteria = dict(mag=1e-15,         # 1 fT
 epochs_clean = epochs_ip.copy().drop_bad(reject=reject_criteria, flat=flat_criteria)
 
 # Save the cleaned epochs
-epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-epo.fif')
+epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-epo.fif')
 if not exists(epo_name):
     epochs_clean.save(epo_name, overwrite=True)
 else:
@@ -433,7 +452,7 @@ By now we have some data in memory which we don't need, so lets clean up a bit b
 
 ```{python}
 #%% Clear some memory
-del(eeg, index, epochs, epochs_ip, raw)
+del(eeg, index, epochs, epochs_ip)
 ```
 
 ## Advanced pre-processing: independent component analysis (ICA)
@@ -446,17 +465,16 @@ The code below shows how to remove eye-blinks and heart-beats from the MEG data.
 ```{python}
 #%% ICA fit
 # Since this is a very time consuming process, lets load the saved ICA-file if we have one from earlier.
-ica_name = join(output_path, 'tactile_stim_ds200Hz-ica.fif')
-raw_ds_name = join(output_path, 'tactile_stim_ds200Hz_hp1Hz-raw.fif')
+ica_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-ica.fif')
+raw_ds_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-raw.fif')
 
 if exists(raw_ds_name):
-    raw = mne.io.read_raw_fif(raw_ds_name)
+    raw_ds = mne.io.read_raw_fif(raw_ds_name)
 else:
-    # We filter in place
-    raw.resample(200) # since we need to load the raw data, lets downsample to 200Hz (same as epochs)
-    raw.load_data()
-    raw.save()
-    raw.filter(1, None)
+    # We resample in place to match the epochs
+    raw_ds = raw_filtered.resample(200) # since we need to load the raw data, lets downsample to 200Hz (same as epochs)
+    raw_ds.load_data()
+    raw_ds.save(raw_ds_name)
 
 if exists(ica_name):
     ica = mne.preprocessing.read_ica(ica_name)
@@ -484,14 +502,15 @@ Plot the components (if plot is interactive you can bring up component propertie
 
 ```{python}
 #%% ICA plots
-ica.plot_sources(raw) # right click the component name to view its properties
-ica.plot_components(inst=raw) # click the components to view its properties
+ica.plot_sources(raw_ds) # right click the component name to view its properties
+ica.plot_components(inst=raw_ds) # click the components to view its properties
 # or
-ica.plot_properties(raw, picks=[0, 1])
-
+# ica.plot_properties(raw_ds, picks=[0, 1])
 ```
 
 See if you can find components that correspond to eye-blinks and heart-beats from the component topographies and component time-series? When you have found the components that correspond to eye-blinks and heart-beats, you can remove by adding them to the list `ica.exclude`:
+
+
 
 ```{python}
 #%% Exclude components
@@ -526,7 +545,7 @@ The following code will find the components that show similarity to the ECG sign
 # Clear the manual list
 ica.exclude = []
 
-ecg_indices, ecg_scores = ica.find_bads_ecg(raw)
+ecg_indices, ecg_scores = ica.find_bads_ecg(raw_ds)
 ica.exclude.extend(ecg_indices)
 
 fig = ica.plot_scores(ecg_scores, show=show_plots)
@@ -535,12 +554,12 @@ if not exists(figname):
     fig.savefig(figname)
 
 for ecg in ecg_indices:
-    fig = ica.plot_properties(raw, picks=ecg, show=show_plots)[0]
+    fig = ica.plot_properties(raw_ds, picks=ecg, show=show_plots)[0]
     figname = join(figs_path, f'ica_ecg_comp_propch_{ecg}.png')
     if not exists(figname):
         fig.savefig(figname)
 
-ecg_evoked = mne.preprocessing.create_ecg_epochs(raw).average()
+ecg_evoked = mne.preprocessing.create_ecg_epochs(raw_ds).average()
 ecg_evoked.apply_baseline(baseline=(None, -0.2))
 fig = ecg_evoked.plot_joint(picks='mag')
 figname = join(figs_path, 'ecg_evoked.png')
@@ -561,7 +580,7 @@ The following code will find the components that show similarity to the EOG sign
 
 ```{python}
 #%% Semi-automated EOG detection
-eog_indices, eog_scores = ica.find_bads_eog(raw)
+eog_indices, eog_scores = ica.find_bads_eog(raw_ds)
 ica.exclude.extend(eog_indices)
 
 fig = ica.plot_scores(eog_scores, show=show_plots)
@@ -571,12 +590,12 @@ if not exists(figname):
 
 
 for eog in eog_indices:
-    fig = ica.plot_properties(raw, picks=eog, show=show_plots)[0]
+    fig = ica.plot_properties(raw_ds, picks=eog, show=show_plots)[0]
     figname = join(figs_path, f'ica_eog_comp_prop_ch{eog}.png')
     if not exists(figname):
         fig.savefig(figname)
 
-eog_evoked = mne.preprocessing.create_eog_epochs(raw).average()
+eog_evoked = mne.preprocessing.create_eog_epochs(raw_ds).average()
 eog_evoked.apply_baseline(baseline=(None, -0.2))
 fig = eog_evoked.plot_joint(picks='mag')
 figname = join(figs_path, 'eog_evoked.png')
@@ -612,7 +631,7 @@ Finally, save the data:
 
 ```{python}
 #%% Save cleaned epochs
-epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
+epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif')
 if not exists(epo_name):
     epochs_clean_ica.save(epo_name, overwrite=True)
 

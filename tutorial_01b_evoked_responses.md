@@ -55,12 +55,12 @@ output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 ## Load data
 ```{python}
 #%% Load the data
-epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
+epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif')
 epochs = mne.read_epochs(epo_name)
 ```
 
 ## A little more pre-processing
-The data `cleaned_downsampled_data` had data 2 seconds before and after the stimulation. For this analysis, we are only interested in the activity that is "evoked" by the stimulation itself. Evoked responses are (usually) not lasting more than 500-1000 ms after stimulation before returning to baseline activity. We will, therefore, cut the epochs to only have data from stimulation (t = 0) until 600 ms after stimulation, and a 200 ms pre-stimulus baseline period. 
+The data `epochs` had data 2 seconds before and after the stimulation. For this analysis, we are only interested in the activity that is "evoked" by the stimulation itself. Evoked responses are (usually) not lasting more than 500-1000 ms after stimulation before returning to baseline activity. We will, therefore, cut the epochs to only have data from stimulation (t = 0) until 600 ms after stimulation, and a 200 ms pre-stimulus baseline period. 
 
 Since we are interested in the slow evoked responses, we might as well get rid of high-frequency noise: we will apply a 70 Hz lowpass filter before proceeding.
 
@@ -75,7 +75,7 @@ Crop trials into time of interest:
 ```{python}
 #%% Crop
 tmin, tmax = -0.200, 0.600
-epochs.crop(tmin=-tmin, tmax=tmax)
+epochs.crop(tmin=tmin, tmax=tmax)
 ```
 
 
@@ -119,7 +119,7 @@ figname = join(figs_path, 'evoked_mag_topo.png')
 if not exists(figname):
     fig.savefig(figname)
 
-# For magnotometers
+# For gradiometers
 fig = mne.viz.plot_evoked_topo(evod['Little finger'].copy().pick_types('grad'), title='Gradiometers',
                                show=show_plots)
 figname = join(figs_path, 'evoked_grad_topo.png')
@@ -133,8 +133,6 @@ figname = join(figs_path, 'evoked_eeg_topo.png')
 if not exists(figname):
     fig.savefig(figname)
 ```
-
-The plots are interactive. Use your courser to select channels and then click on them to open a new figure that zooms in on the selected channels. You can then highlight parts of the time-series in the same way to open a new figure that shows the topography of that time window. Use this to explore the evoked responses.
 
 ![topoplotmag](figures/evoked_mag_topo.png "Topo-plot Magnotometers sensors")
 
@@ -187,11 +185,16 @@ if not exists(figname):
 
 Now let us look at the ERFs and ERPs for the stimulation on all five fingers. We have already created the evoked responses, in a dict `evod` and in a list `evo`
 
-We can also compute the noise covariance estimation, which is necessary if you want to combine magnetometers, gradiometers and electrodes when doing source analysis.
+We can also compute the noise covariance estimation, which is necessary if you want to combine magnetometers, gradiometers and electrodes when doing source analysis. 
+
+Since we're going to be looking at the evoked signal after our stimulus at t=0 of our epoch, we can assume that any signal that comes before t=0 is not relevant for this specific analysis. If you were looking at something like predicting a stimulus, maybe you would choose a different part of the recording for a noise covariance calculation.
+
+Additionally, since our data is MaxFiltered (some preprocessing is applied immediately after the recording for noise supresison), we need to specify that the `rank` we are using for our noise calculation is `rank='info'`. If your data has not been MaxFiltered, then you can allow MNE to select the rank for you. We let MNE choose the best method for our covariance calculation by specifying `method='auto'`.
+
 
 ```{python}
 #%% Create the noise covariance
-noise_cov = mne.compute_covariance(epochs)
+noise_cov = mne.compute_covariance(epochs, tmin=None, tmax=0, rank='info', method='auto')
 
 # Save the noise covariance matrix
 cov_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-cov.fif')
