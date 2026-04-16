@@ -1,18 +1,3 @@
----
-jupytext:
-  cell_metadata_filter: -all
-  formats: md:myst
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.14.0
-kernelspec:
-  display_name: Python 3 (ipykernel)
-  language: python
-  name: python3
----
-
 # Tutorial 1A: From raw data to evoked responses: pre-process MEG & EEG data
 
 In this tutorial, you will go through the initial steps that take you from raw data to evoked responses. These steps are:
