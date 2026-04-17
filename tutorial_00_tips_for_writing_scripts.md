@@ -18,7 +18,7 @@ You can also add longer segments of text that should not be treated as code, but
 There are several reasons why you should comment your scripts. The first reason is that it makes it much easier to go back to your old scripts and know what they are supposed to do. What is self-evident when you first write your code might not be evident years later. The time you spent on writing comments in your code will come back later. The second reason for commenting your code is the usefulness if you are part of collaboration where you have to share data and scripts. What is self-evident for you might not be evident for other people. The third reason is that there is an increase in demand for sharing analysis scripts when publishing scientific articles, either for review purposes or demand by publishers that it has to be made available upon publication. Make it easier for the reviewers to understand what you are doing with your data. And finally, writing what the code is supposed to do helps you identify code that is not working correctly.
 
 ## Python modules
-Python you need to import the modules and/or functions that you will use. Many are included by default, but you will need to install some additional modules. How to do this will not be covered in this tutorial. Make a habit of importing the libraries in the begging of your script.
+Python you need to import the modules and/or functions that you will use. Many are included by default, but you will need to install some additional modules. How to do this will not be covered in this tutorial. Make a habit of importing the libraries in the beginning of your script.
 
 ```python 
 
