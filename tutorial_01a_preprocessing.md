@@ -27,18 +27,16 @@ from os.path import join, exists, expanduser
 import numpy as np
 import matplotlib.pyplot as plt
 
-# project_path = join(expanduser('~'), 'courses/meeg_course_mne') # Change to match your project path
-# meg_path = join(project_path, '../data')   # Change to match your data path
-# figs_path = join(project_path, 'figs')
-
-meg_path = '../data'
-figs_path = 'figures'
+meg_path = '../data' # Change to match your data path
+figs_path = 'figures' # Change to match your figuures path (make sure to create the folder if it does not exist)
 
 print(os.listdir(meg_path))
 print(os.listdir(figs_path))
 
 show_plots = False # Change to True to open plots in browser
 ```
+If you see a "FileNotFoundError: [Errno 2] No such file or directory: 'xxxx'" error, check that you have the correct paths set.
+
 
 Then define the subject and recording specific paths. For now, we only have one subject and session. In principle, we could just define the path as one string variable when we only have one subject. But we introduce this already now as it is a good ´way to organize your data when you have multiple subjects or session. In that case, the cell array `subjects_and_dates` can be expanded to include more subjects, simply by adding the subject ids and session names.
 
