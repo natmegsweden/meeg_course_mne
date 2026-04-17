@@ -273,7 +273,6 @@ Now let's work a bit with the data.
 #%% Create downsampled epochs
 epochs.load_data() # load data
 epochs.resample(200)
-
 ```
 
 The epochs object contain all the data from all channels and have multiple attributes and methods which can be applied on the epochs.
