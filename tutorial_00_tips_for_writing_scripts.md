@@ -98,7 +98,7 @@ sub01-tfr.fif
 Note that each file has the id of the subject (`sub01`) in all filenames and a string indicating what analysis step it belongs to.
 
 ## Store data separate by subject and session
-When you have data from multiple subjects resist the temptation to throw all data into one folder. Instead, create a project folder where you have one folder per subjects. And if you have more than one session per subject, you should then have separate sub-folders in the subject folder:
+When you have data from multiple subjects resist the temptation to throw all data into one folder. Instead, create a project folder where you have one folder per subject. And if you have more than one session per subject, you should then have separate sub-folders in the subject folder:
 
 ```shell
 /home/mikkel/my_project/data/ ...
