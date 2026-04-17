@@ -72,6 +72,8 @@ Create a grid around the brain and estimate the forward model for each of the gr
 
 For any given source (a grid point inside the brain) it is calculated how each sensor (magnetometer, gradiometer or electrode) sees (how much T, T/m or V would it pick up) a source with unit strength (1 nAm). One might say that it says: "For a given source, if it is active, how would the different sensors see it"
 
+Always check that your source space is aligned!
+
 ```{python}
 # one source space for MEG and EEG
 src = mne.setup_volume_source_space(subject=subject, 
@@ -101,7 +103,7 @@ Before, we made a covariance matrix using ad hoc covariance that assumes some am
 
 A data covariance matrix tells us about what our singal (+ noise) looks like when we're trying to fit a beamformer to it. Conversely, the noise covariance is useful for whitening the data and improving the SNR as it tells the algorithms what you're not interested in. 
 
-In this tutorial, we are using a time period that includes our signal of interest for the data covariance and the baseline, pre-stimulus period for our noise covariance. 
+In this tutorial, we are using a time period that includes our signal of interest for the data covariance and the baseline, pre-stimulus period for our noise covariance. We use `rank='info'` because our data was MaxFiltered after acquisition which reduces the rank from what MNE-Python assumes it is (it assumes that it's the number of sensors).
 
 Then we plot it for teaching and understanding purposes.
 ```{python}
@@ -190,6 +192,9 @@ source_contrast = source_stim.copy()
 source_contrast.data = (source_stim.data - source_base.data) / (source_base.data)
 source_contrast.plot(src=src, subject=subject, subjects_dir=subjects_dir)
 ```
+![LCMV_source_contrast](figures/LCMV_source_contrast.png)
+
+> If the plot layout looks a little strange (but looks like the one pictured above), that's correct! MNE just has some quirks in plotting that aren't easy to solve.
 
 ## Frequency-Domain Beamformer
 In the next part, we will do source reconstruction of time-frequency data with a beamformer method known as Dynamic Imaging of Coherent Sources (DICS).
@@ -216,6 +221,8 @@ combined_tois_epo = epo['Thumb'].copy().crop(tmin=-0.500, tmax=0.970)
 Now that we have our time-windows of interest, we can compute the cross-spectral densities for each of our epoch objects. This is like how we made the covariance matrices earlier for our LCMV filter creations. 
 
 We could have chosen a different type of CSD calculation (such as morlet wavelet analysis) or selected a different set of frequencies. It all depends on your data and what you're looking for. In this case, we have a narrow frequency band and a long enough time window, so fourier can work. 
+
+Fourier-based CSD requires that the time window is long enough to resolve the frequency band of interest (Remember when we talked about what parts of time-frequency analyses can be interpretted because of the time required for a full cycle?). If the window is too short, you may get errors or unreliable estimates.
 
 ```{python}
 csd_combo= mne.time_frequency.csd_fourier(combined_tois_epo, fmin=14, fmax=16)
@@ -260,6 +267,8 @@ brain = stc.plot(
     subject=subject
 )
 ```
+![DICS_source_contrast](figures/DICS_source_contrast.png)
+
 > **Question 5.3:** Explain how you would interpret the new image that you have created.
 
 ## Use beamformers to make a "virtual electrode"
@@ -270,3 +279,104 @@ For the last beamformer application, we will create a virtual electrode in the p
 ```{python}
 pos, _ = stc.get_peak()
 ```
+Now that we have our position, we follow a very similar process from making LCMV filters before.
+
+Select the time period that you wish to make a virtual electrode for.
+
+```{python}
+thumb_epo = epo['Thumb'].copy().crop(-.200, .600)
+thumb_epo.pick('meg')
+thumb_evo = thumb_epo.average()
+```
+Make your covariance matrices.
+
+```{python}
+thumb_data_cov = mne.compute_covariance(thumb_epo, tmin=0, tmax=.600, rank='info', method='auto')
+thumb_noise_cov = mne.compute_covariance(thumb_epo, tmin=None, tmax=0, rank='info', method='auto')
+```
+Make and apply your LCMV filters. However, this time we're applying them to the epochs, so we have single trial data for our virtual electrode.
+
+```{python}
+lcmv_filters = mne.beamformer.make_lcmv(thumb_epo.info,
+                                   forward=meg_fwd,
+                                   data_cov=thumb_data_cov,
+                                   reg=0.05,
+                                   noise_cov=thumb_noise_cov,
+                                   pick_ori='max-power',
+                                   rank='info')
+
+stcs_lcmv = mne.beamformer.apply_lcmv_epochs(thumb_epo, lcmv_filters)
+```
+Now that we have the stc for each epoch, we can use the position of the maximum we identified earlier to create our virtual electrode. 
+
+```{python}
+ve = []
+
+for stc in stcs_lcmv:
+    n_lh = len(stc.vertices[0])
+
+    if pos in stc.vertices[0]:
+        idx = list(stc.vertices[0]).index(pos)
+        tc = stc.data[idx, :]
+    elif pos in stc.vertices[1]:
+        idx = list(stc.vertices[1]).index(pos)
+        tc = stc.data[n_lh + idx, :]
+    else:
+        raise RuntimeError("Peak vertex not found in this STC.")
+
+    ve.append(tc)
+
+ve = np.array(ve)   # shape: (n_epochs, n_times)
+```
+The data in the "virtual electrode" is now equivalent to the epoched data. We can now apply all the same types of analyses that we would do to our sensor-level data, e.g. calculate evoked responses or TFR. The "virtual electrode" approach can be thought of as a preprocessing step
+
+Try to calculate the evoked response in the virtual sensor:
+```{python}
+# virtual electrode amplitude over time
+ve_mean = ve.mean(axis=0)
+
+plt.plot(thumb_epo.times, ve_mean)
+plt.axvline(0, linestyle="--")
+plt.xlabel("Time (s)")
+plt.ylabel("Beamformer amplitude")
+plt.title("Virtual electrode at DICS beta peak")
+plt.show()
+
+# Virtual electrode power over time
+mn = np.abs(ve_mean)
+
+plt.subplot(2, 1, 2)
+plt.plot(thumb_epo.times, mn)
+plt.axvline(0, linestyle="--")
+plt.xlabel("Time (s)")
+plt.ylabel("Power (a.u.)")
+plt.title("Virtual Electrode Power (norm)")
+
+plt.tight_layout()
+plt.show()
+```
+![virt_elec_peka_beta_meg](figures/virt_elec_peka_beta_meg.png)
+![virt_elec_beta_power](figures/virt_elec_beta_power.png)
+
+> **Question 5.4:** The procedure to create a "virtual channel" is the same for magnetometers and EEG electrodes (though the actual calculation "under the hood" is different). Repeat the procedure to calculate the virtual electrode, but this time for the EEG data. Change the `thumb_epo.pick()` to `eeg` and make sure you're using an EEG forward model. You can read in one that you've saved before or make a new one. 
+>
+>```{python}
+> eeg_fwd = mne.make_forward_solution(
+>    info=evo[3].info,
+>    trans=trans,
+>    src=src,
+>    bem=eeg_head_model,
+>    meg=False,
+>    eeg=True
+> )
+>```
+> In order to do inverse modeling on our EEG data, we have to set the average reference to act as a projector instead of being applied directly to the data. Ensure you have done that prior to applying the filters to your epochs or it will throw an error!
+>
+>```{python}
+> thumb_epo.set_eeg_reference('average', projection=True)
+>```
+>
+> How does the virtual channel estimated from the EEG electrodes compare the virtual channel estimated from the gradiometers and why might this be? (You're welcome to include your plot if that would be helpful for explaining.)
+
+## End of Tutorial 5
+Beamformers offers a variety of methods to analyse MEG (and to some extend EEG) data. You can use it to localize responses in the data, localize specific oscillatory activity, or to "reconstruct" signals as if they were measured at a given location. In the next tutorial, we will also look at how beamformers can be used in connectivity analysis.
