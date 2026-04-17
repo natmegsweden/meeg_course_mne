@@ -345,7 +345,7 @@ The bad electrodes will mess up our analysis if left in. There are many ways to 
 
 ```{python}
 #%% Select channels and set bad channels for interpolation
-eeg = epochs.copy().pick_types(eeg=True)
+eeg = epochs.copy().pick("eeg")
 
 eeg.average().plot_image(show=show_plots)
 eeg.average().plot_topo(show=show_plots)
@@ -388,13 +388,13 @@ In the tutorial data, EEG was recorded with the FCz electrode as reference. This
 ```{python}
 #%% Add reference to EEG
 # Plot with FCz reference
-epochs_ip.copy().pick_types(eeg=True).plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
+epochs_ip.copy().pick("eeg").plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
 
 # Add reference
 epochs_ip.set_eeg_reference(ref_channels='average')
 
 # Plot without reference
-epochs_ip.copy().pick_types(eeg=True).plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
+epochs_ip.copy().pick("eeg").plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
 
 ```
 
