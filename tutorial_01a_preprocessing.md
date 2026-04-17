@@ -187,7 +187,7 @@ Now plot the triggers across time:
 
 ```{python}
 # %% Plot events
-fig = mne.viz.plot_events(eve, event_id=event_id)
+fig = mne.viz.plot_events(eve, event_id=event_id, show=show_plots)
 figname = join(figs_path, 'triggers.png')
 if not exists(figname):
     fig.savefig(figname)
