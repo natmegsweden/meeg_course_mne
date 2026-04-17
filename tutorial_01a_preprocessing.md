@@ -467,14 +467,14 @@ else:
     ica = mne.preprocessing.ICA(n_components=40,
                                 method='fastica',
                                 random_state=99) #by specifiying the random_state, we get the same result if we run the code again
-    ica.fit(raw, picks='meg') # Using only the MEG channels
+    ica.fit(raw_ds, picks='meg') # Using only the MEG channels
     # Save the ICA object
     
     ica.save(ica_name, overwrite=True)
 
 # Explore the ICA solution
-raw.load_data()
-explained_var_ratio = ica.get_explained_variance_ratio(raw)
+raw_filtered.load_data()
+explained_var_ratio = ica.get_explained_variance_ratio(raw_filtered)
 for channel_type, ratio in explained_var_ratio.items():
     print(
         f'Fraction of {channel_type} variance explained by all components: '
