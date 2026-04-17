@@ -60,7 +60,7 @@ Modules for data analysis gets updated regularly. However, do not update MNE dai
 
 If you have many ongoing projects, it is useful to have several versions to make sure that you use the same versions for each project.
 
-Some advantages with using Anaconda is that you can create a new environment with updated modules if you are starting a new project. You can also export a list of you moduls and versions to recreate environments.
+You can use software like [Anaconda](https://www.anaconda.com/) to manage different versions of Python and modules. You can create different environments with different versions of Python and modules for each project and activate each environment as needed. You can also export a list of your modules and versions to recreate environments.
 
 ## One script does one data processing step
 It might seem like a good idea to have one big script that you only have to run once to go from raw data to the finished result. It is not! It only makes it difficult to find bugs and errors. Instead, try to follow the principle:
