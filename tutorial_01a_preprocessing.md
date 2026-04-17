@@ -235,7 +235,8 @@ raw_filtered_fname = join(output_path, 'tactile_stim_hp1Hz_lp95Hz-raw.fif')
 if exists(raw_filtered_fname):
     raw_filtered = mne.io.read_raw_fif(raw_filtered_fname)
 else:
-    raw_filtered = raw.copy().notch_filter(50)
+    raw_filtered = raw.copy().load_data() # we need to load the data into memory to apply the filters
+    raw_filtered.notch_filter(50)
     raw_filtered.filter(1, 95)
     raw_filtered.save(raw_filtered_fname)
 ```
