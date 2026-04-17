@@ -388,13 +388,13 @@ In the tutorial data, EEG was recorded with the FCz electrode as reference. This
 ```{python}
 #%% Add reference to EEG
 # Plot with FCz reference
-epochs_ip.copy().pick("eeg").plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
+epochs_ip.plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots, picks='eeg')
 
 # Add reference
 epochs_ip.set_eeg_reference(ref_channels='average')
 
 # Plot without reference
-epochs_ip.copy().pick("eeg").plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
+epochs_ip.plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots, picks='eeg')
 
 ```
 
