@@ -225,7 +225,7 @@ In additionally to visually manipulating the data, you can make changes to aid y
 
 In Sweden, this is 50Hz, so we use `notch_filter(50)` to cut out a single frequency (or a list if you include the harmonics 100, 150, etc). In the method `notch_filter`, MNE-Python has built in transition zone to reduce the likelihood of artifacts from the filter in future analyses. 
 
-We will also use a bandpass filter calling the method `filter(1,95)` to only take the frequencys between 1 Hz and 95 Hz. There are a couple of reasons you might do this in your own pipelines. One reason could be that you're only interested in a specific frequency window (like alpha, 8-12Hz) or you notice a slow change in the signal overtime, called a slow drift. Since we're often not interested in the lowest or highest frequency signals, preprocessing pipelines filter them out to better analyze the signals of interest. 
+We will also use a bandpass filter calling the method `filter(1,95)` to only take the frequencies between 1 Hz and 95 Hz. There are a couple of reasons you might do this in your own pipelines. One reason could be that you're only interested in a specific frequency window (like alpha, 8-12Hz) or you notice a slow change in the signal overtime, called a slow drift. Since we're often not interested in the lowest or highest frequency signals, preprocessing pipelines filter them out to better analyze the signals of interest. 
 
 In our case, we want to see the response to a tactile stimulation. Using filters relies on having some prior knowledge about what is considered noise and what your signal of interest looks like. For this tutorial, we will filter out very low (less than 1Hz) and very high (greater than 95). 
 
