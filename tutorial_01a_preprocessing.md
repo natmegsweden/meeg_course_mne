@@ -172,14 +172,15 @@ Since the trigger values might tell you nothing you can add event ID's to the tr
 
 ```{python}
 #%% Set event names
-event_id = {'Little finger': 1,
-            'Ring finger': 2,
-            'Middle finger': 4,
-            'Index finger': 8,
-            'Thumb': 16
-            # 'New block begins': 32,
-            # 'End of experiment': 64
-            }    
+event_id = {
+    'Little finger': 1,
+    'Ring finger': 2,
+    'Middle finger': 4,
+    'Index finger': 8,
+    'Thumb': 16
+    # 'New block begins': 32,
+    # 'End of experiment': 64
+    }    
 ```
 
 Now plot the triggers across time:
