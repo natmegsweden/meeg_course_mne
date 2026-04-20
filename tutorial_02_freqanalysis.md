@@ -207,7 +207,7 @@ The PSD analysis above assumes that the spectral power is the same across the en
 Instead of calculating the power across the entire epoch and then average all epochs, we now will calculate the power for each time sample. In essence, we centre the window on a given time sample and estimate the power of that particular window. We can use different arguments to balance the resolution between time and frequency. 
 
 ### Get TFR with single taper MEG
-In FieldTrip, you also use the function `mne.time_frequency.tfr_multitaper` to calculate the time-frequency response (TFR) using tapers. We can adjust the frequency resolution by defining the `freqs` of interest and the number many cycles per wavelet.
+In MNE, you also use the function `mne.time_frequency.tfr_multitaper` to calculate the time-frequency response (TFR) using tapers. We can adjust the frequency resolution by defining the `freqs` of interest and the number many cycles per wavelet.
 
 NB. TFR calculations take significantly longer time to calculate than PSD. You can always pick a selection by adding e.g `picks='mag'` to only select magnotometers and save time. You can always go back and redo the other channel types. This creates an AverageTRF-object. To create an EpochTFR-object you need to have `average` set to `False` and to reduce memory consumption, you may need to decimate the data (eg. `decim=3`).
 
