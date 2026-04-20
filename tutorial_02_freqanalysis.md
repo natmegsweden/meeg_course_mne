@@ -198,7 +198,10 @@ for p, lab in zip([psd_hann, psd_multi, psd_multi10], ['Multi 1', 'Multi 2', 'Mu
     ax.plot(freqs, np.log10(psd.mean(0).mean(0)), label = lab)
 ax.legend()
 fig.suptitle('EEG')
-fig
+fig.tight_layout()
+
+figname = join(figs_path, 'PSD_EEG.png')
+fig.savefig(figname)
 ```
 
 ## Time-frequency analysis
