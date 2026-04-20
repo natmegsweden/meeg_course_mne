@@ -387,8 +387,9 @@ Now calculate TFR with wavelets as before:
 freqs = np.arange(1, 45)  # Frequencies we want to estimate from 1 Hz to 45 Hz in steps of 1HZ
 n_cycles=freqs/3
 
-tfr_morlet_induced = mne.time_frequency.tfr_morlet(thumb_induced, freqs=freqs, n_cycles=n_cycles, 
-                                          return_itc=False, average=True)
+tfr_morlet_induced = thumb_induced.compute_tfr(freqs=freqs, n_cycles=n_cycles, 
+    return_itc=False, average=True, method="morlet")
+
 ```
 
 
