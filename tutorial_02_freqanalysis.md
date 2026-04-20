@@ -359,12 +359,11 @@ if not exists(figname):
 
 Also try to plot the EEG TFRs for comparison:
 ```{python}
-# Not working
-fig = tfr_morlet.plot_topo(picks='eeg', baseline=(None, 0), cmap='jet')
+eeg_tfr_morlet = tfr_morlet.copy().pick_types(eeg=True)
+fig = eeg_tfr_morlet.plot_topo(baseline=(None, 0), cmap='jet')
 
 figname = join(figs_path, 'TFR_morlet3_eeg.png')
-if not exists(figname):
-    fig.savefig(figname)
+fig.savefig(figname)
 ```
 
 ## Increase sensitivity to non-phase locked signals
