@@ -295,7 +295,7 @@ fig = tfr_hann.plot(picks='MEG0711', baseline=(None, 0), mode='logratio', cmap='
 
 figname = join(figs_path, 'TFR_hann4singChan.png')
 if not exists(figname):
-    fig.savefig(figname)
+    fig[0].savefig(figname)
 ```
 
 ![](figures/TFR_hann5singChan.png)
