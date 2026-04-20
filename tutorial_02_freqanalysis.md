@@ -50,7 +50,7 @@ output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 
 ## Load data
 Read in cleaned epochs from **Tutorial 1A** (remember where you put the data and what you named it).
-If you did not complete the data preperation tutorial, you can load the data file `tactile_stim_ds200Hz-clean-ica-epo.fif` from the tutorial material:
+If you did not complete the data preperation tutorial, you can load the data file `tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif` from the tutorial material:
 
 ## Load data
 ```{python}
