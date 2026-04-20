@@ -21,12 +21,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcol
 
-# project_path = join(expanduser('~'), 'courses/meeg_course_mne') # Change to match your project path
-# meg_path = join(project_path, '../data')   # Change to match your data path
-# figs_path = join(project_path, 'figs')
-
-meg_path = '../data'
-figs_path = 'figures'
+meg_path = '../data' # change to match your data path
+figs_path = 'figures' # change to match your figure path
 
 show_plots = False # Change to True to open plots in browser
 
