@@ -55,7 +55,7 @@ If you did not complete the data preperation tutorial, you can load the data fil
 ## Load data
 ```{python}
 #%% Load the data
-epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
+epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif')
 epochs = mne.read_epochs(epo_name)
 ```
 
