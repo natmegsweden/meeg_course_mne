@@ -150,7 +150,7 @@ for p, lab in zip([psd_hann, psd_multi, psd_multi10], ['Hann', 'Multi 2', 'Multi
     psd, freqs = p.get_data(picks = ['mag'], fmin=fmin, fmax=fmax, return_freqs=True)
     ax.plot(freqs, np.log10(psd.mean(0).mean(0)), label = lab)
 ax.legend()
-fig
+
 figname = join(figs_path, 'PSD_all.png')
 if not exists(figname):
     fig.savefig(figname)
@@ -169,16 +169,23 @@ Compare the results from the different methods to calculate PSD.
 
 
 ```{python}
-fig, ax = plt.subplots(3, 1)
-i = 0
-for b, bn in zip([(8, 12), (14, 30), (55, 95)], ['Alpha', 'Beta', 'High gamma']):
+
+freq_bands = [(8, 12), (14, 30), (55, 95)] # defining the lower and upper limits of the frequency bands of interest
+names = ['Alpha', 'Beta', 'High gamma'] # names of the frequency bands for plotting
+
+fig, axes = plt.subplots(1, len(freq_bands), figsize=(12, 6), sharey=True)
+
+for b, bn, ax in zip(freq_bands, names, axes.flatten()):
     for p, lab in zip([psd_hann, psd_multi, psd_multi10], ['Hann', 'Multi 2', 'Multi 10']):
         psd, freqs = p.get_data(picks = ['mag'], fmin=b[0], fmax=b[1], return_freqs=True)
-        ax[i].plot(freqs, np.log10(psd.mean(0).mean(0)), label = lab)
-        ax[i].set_title(bn)
-        ax[i].legend()
-    i += 1
-fig
+        ax.plot(freqs, np.log10(psd.mean(0).mean(0)), label = lab)
+        ax.set_title(bn)
+        ax.legend()
+
+fig.tight_layout()
+
+figname = join(figs_path, 'PSD_bands.png')
+plt.savefig(figname)
 ```
 
 Bonus: View the PSD of EEG
