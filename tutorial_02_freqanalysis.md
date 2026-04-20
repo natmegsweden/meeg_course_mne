@@ -359,7 +359,7 @@ if not exists(figname):
 
 Also try to plot the EEG TFRs for comparison:
 ```{python}
-eeg_tfr_morlet = tfr_morlet.copy().pick_types(eeg=True)
+eeg_tfr_morlet = tfr_morlet.copy().pick(picks='eeg')
 fig = eeg_tfr_morlet.plot_topo(baseline=(None, 0), cmap='jet')
 
 figname = join(figs_path, 'TFR_morlet3_eeg.png')
