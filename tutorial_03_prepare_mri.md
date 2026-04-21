@@ -1,8 +1,4 @@
-# Dev notes
-- Add the .mgz mri to the data downloaded at the beginning of the class. 
-- tell students if they want to use MNE-Python, they have to download freesurfer unfortunately
-
-# Preprocess MRI data for MEG/EEG source reconstruction
+# Tutorial 3: Preprocess MRI data for MEG/EEG source reconstruction
 
 To do source reconstruction of MEG and EEG signals, we need to solve the inverse problem; i.e., find the sources that generate the magnetic or electric field patterns that we measure. This inverse problem has infinite solutions. To be able to estimate the sources of the magnetic and electrical signals, we need constraints on the possible solutions. Lucky enough, we know that the origin of MEG and EEG signals is not any random electric currents, but currents in the brain; more precise the pyramidal cells in neocortex. We can use this information to constrain the solutions to the inverse problem to a set of pre-specified locations. We assume that the activity we measure comes from the brain and thus limit our possible sources to be within the brain.
 
