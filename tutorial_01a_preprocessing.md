@@ -235,14 +235,9 @@ raw_filtered_fname = join(output_path, 'tactile_stim_lp70Hz-raw.fif')
 if exists(raw_filtered_fname):
     raw_filtered = mne.io.read_raw_fif(raw_filtered_fname)
 else:
-<<<<<<< Updated upstream
     raw_filtered = raw.copy().load_data() # we need to load the data into memory to apply the filters
     raw_filtered.notch_filter(50)
-    raw_filtered.filter(1, 95)
-=======
-    raw_filtered = raw.copy().notch_filter(50)
     raw_filtered.filter(None, 70)
->>>>>>> Stashed changes
     raw_filtered.save(raw_filtered_fname)
 ```
 
@@ -349,13 +344,10 @@ The bad electrodes will mess up our analysis if left in. There are many ways to 
 
 ```{python}
 #%% Select channels and set bad channels for interpolation
-<<<<<<< Updated upstream
 eeg = epochs.copy().pick("eeg")
 
 eeg.average().plot_image(show=show_plots)
 eeg.average().plot_topo(show=show_plots)
-
-eeg.average().plot(show=show_plots)
 
 # Add the bad channels to the list
 bad_chs = ['EEG027', 'EEG003', 'EEG008', 'EEG034', 'EEG096', 'MEG0121', 'EEG040', 'EEG079']
@@ -393,14 +385,12 @@ In the tutorial data, EEG was recorded with the FCz electrode as reference. This
 ```{python}
 #%% Add reference to EEG
 # Plot with FCz reference
-<<<<<<< Updated upstream
 epochs_ip.plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots, picks='eeg')
 
 # Add reference
 epochs_ip.set_eeg_reference(ref_channels='average')
 
 # Plot without reference
-<<<<<<< Updated upstream
 epochs_ip.plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots, picks='eeg')
 
 ```
