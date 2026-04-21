@@ -51,17 +51,8 @@ output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 ## Load data
 ```{python}
 #%% Load the data
-epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif')
+epo_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-ica-epo.fif')
 epochs = mne.read_epochs(epo_name)
-```
-
-## A little more pre-processing
-Since we are interested in the slow evoked responses, we might as well get rid of high-frequency noise: we will apply a 70 Hz lowpass filter before proceeding.
-
-```{python}
-#%% Filter
-hp, lp = None, 70
-epochs.filter(hp, lp)
 ```
 
 The data `epochs` had data 2 seconds before and after the stimulation. For this analysis, we are only interested in the activity that is "evoked" by the stimulation itself. Evoked responses are (usually) not lasting more than 500-1000 ms after stimulation before returning to baseline activity. We will, therefore, cut the epochs to only have data from stimulation (t = 0) until 600 ms after stimulation, and a 200 ms pre-stimulus baseline period. 
