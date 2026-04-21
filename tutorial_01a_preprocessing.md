@@ -230,14 +230,19 @@ We will also use a bandpass filter calling the method `filter(1,95)` to only tak
 In our case, we want to see the response to a tactile stimulation. Using filters relies on having some prior knowledge about what is considered noise and what your signal of interest looks like. For this tutorial, we will filter out very low (less than 1Hz) and very high (greater than 95). 
 
 ```{python}
-raw_filtered_fname = join(output_path, 'tactile_stim_hp1Hz_lp95Hz-raw.fif')
+raw_filtered_fname = join(output_path, 'tactile_stim_lp70Hz-raw.fif')
 
 if exists(raw_filtered_fname):
     raw_filtered = mne.io.read_raw_fif(raw_filtered_fname)
 else:
+<<<<<<< Updated upstream
     raw_filtered = raw.copy().load_data() # we need to load the data into memory to apply the filters
     raw_filtered.notch_filter(50)
     raw_filtered.filter(1, 95)
+=======
+    raw_filtered = raw.copy().notch_filter(50)
+    raw_filtered.filter(None, 70)
+>>>>>>> Stashed changes
     raw_filtered.save(raw_filtered_fname)
 ```
 
@@ -287,10 +292,9 @@ Lets save the `epochs` and load the data.
 
 ```{python}
 #%% Save/load epochs
-epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-epo.fif')
+epo_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-epo.fif')
 if not exists(epo_name):
     epochs.save(epo_name)
-
 else:
     epochs = mne.read_epochs(epo_name)
 ```
@@ -345,6 +349,7 @@ The bad electrodes will mess up our analysis if left in. There are many ways to 
 
 ```{python}
 #%% Select channels and set bad channels for interpolation
+<<<<<<< Updated upstream
 eeg = epochs.copy().pick("eeg")
 
 eeg.average().plot_image(show=show_plots)
@@ -354,7 +359,7 @@ eeg.average().plot(show=show_plots)
 
 # Add the bad channels to the list
 bad_chs = ['EEG027', 'EEG003', 'EEG008', 'EEG034', 'EEG096', 'MEG0121', 'EEG040', 'EEG079']
-epochs.info['bads'].extend(bad_chs)
+epochs.info['bads'] = bad_chs
 ```
 
 In general, there is no need to work with the MEG and EEG as separate objects as we can picks channels for each operation.
@@ -388,12 +393,14 @@ In the tutorial data, EEG was recorded with the FCz electrode as reference. This
 ```{python}
 #%% Add reference to EEG
 # Plot with FCz reference
+<<<<<<< Updated upstream
 epochs_ip.plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots, picks='eeg')
 
 # Add reference
 epochs_ip.set_eeg_reference(ref_channels='average')
 
 # Plot without reference
+<<<<<<< Updated upstream
 epochs_ip.plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots, picks='eeg')
 
 ```
@@ -422,7 +429,7 @@ flat_criteria = dict(mag=1e-15,         # 1 fT
 epochs_clean = epochs_ip.copy().drop_bad(reject=reject_criteria, flat=flat_criteria)
 
 # Save the cleaned epochs
-epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-epo.fif')
+epo_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-epo.fif')
 if not exists(epo_name):
     epochs_clean.save(epo_name, overwrite=True)
 else:
@@ -449,13 +456,14 @@ The code below shows how to remove eye-blinks and heart-beats from the MEG data.
 ```{python}
 #%% ICA fit
 # Since this is a very time consuming process, lets load the saved ICA-file if we have one from earlier.
-ica_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-ica.fif')
-raw_ds_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-raw.fif')
+ica_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-ica.fif')
+raw_ds_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-raw.fif')
 
 if exists(raw_ds_name):
     raw_ds = mne.io.read_raw_fif(raw_ds_name)
 else:
     # We resample in place to match the epochs
+    raw_filtered = raw.copy().filter(None, 70)
     raw_ds = raw_filtered.resample(200) # since we need to load the raw data, lets downsample to 200Hz (same as epochs)
     raw_ds.load_data()
     raw_ds.save(raw_ds_name)
