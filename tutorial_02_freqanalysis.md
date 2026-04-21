@@ -4,14 +4,6 @@ In this tutorial, you will look at different methods for analysis frequency-spec
 ## Import libraries and setup paths
 The first step is to point to the path where we have the data. Change these to appropriate paths for your operating system and setup. Here I choose to use paths relative to where the scripts are.
 
-
-## Developer comments
-
-- A peak at 22Hz when applying Hanning window.
-- method 'multitaper' does not allow defining padding
-- 
-
-
 ```{python}
 #%% Import modules and set up paths
 import mne
@@ -50,12 +42,12 @@ output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 
 ## Load data
 Read in cleaned epochs from **Tutorial 1A** (remember where you put the data and what you named it).
-If you did not complete the data preperation tutorial, you can load the data file `tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif` from the tutorial material:
+If you did not complete the data preperation tutorial, you can load the data file `tactile_stim_lp70Hz_ds200Hz-clean-ica-epo.fif` from the tutorial material:
 
 ## Load data
 ```{python}
 #%% Load the data
-epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif')
+epo_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-ica-epo.fif')
 epochs = mne.read_epochs(epo_name)
 ```
 
@@ -82,7 +74,7 @@ PSD calculations is done with the MNE-Python function `compute_psd()`. Otherwise
 In the first calculation, we will use a Hann window to taper the epochs. This is applied to each epoch in the data structure before doing Fourier decomposition and then calculating the power. Lets us define the windowing/tapering function. 
 
 ```{python}
-method = 'multitaper'
+method = 'welch'
 bandwidth = 'hann'
 fmin = 1
 fmax = 95
@@ -97,7 +89,7 @@ Once finished, look at what is in the structure `psd_hann.get_data()` (hint: use
 Plot the PSD using `plot_topo()`. Since we want to see the averaged data we also need to apply `average()`. Finally, to reduce the span, redo the computation with 45 as fmax. Note that the plot is interactive.
 
 ```{python}
-method = 'multitaper'
+method = 'welch'
 bandwidth = 'hann'
 fmin = 1
 fmax = 45
@@ -157,7 +149,7 @@ if not exists(figname):
 ```
 
 
-![psd_all](figures/PSD_all.jpg)
+![psd_all](figures/PSD_all.png)
 
 Compare the results from the different methods to calculate PSD.
 
@@ -287,7 +279,7 @@ if not exists(figname):
     fig.savefig(figname)
 ```
 
-![](figures/TFR_hann5.png)
+![](figures/TFR_hann4.png)
 
 Zoom in on a single channel:
 ```{python}
@@ -298,9 +290,9 @@ if not exists(figname):
     fig[0].savefig(figname)
 ```
 
-![](figures/TFR_hann5singChan.png)
+![](figures/TFR_hann4singChan.png)
 
-> **Question 2.7:** Why the round edges in the plot?
+> **Question 2.7:** This plot has square edges, but other TFR plots have rounded edges. Explain why a plot might have rounded edges and why just because our plot has its corners, they aren't necessarily meaningful.
 
 ### TFR with multitaper
 Now we will do the same with a higher `time_bandwidth`.
@@ -355,7 +347,7 @@ if not exists(figname):
     fig.savefig(figname)
 ```
 
-![](figures/TFR_wav.jpg)
+![](figures/TFR_morlet3.png)
 
 Also try to plot the EEG TFRs for comparison:
 ```{python}
@@ -403,7 +395,7 @@ if not exists(figname):
     fig.savefig(figname)
 ```
 
-## End of Tutoiral 2
+## End of Tutorial 2
 Now you have compared different methods to calculate PSD and TFR.
 
 > **Question 2.8:** what do the TFR results show? Pick the method you prefer and explain what type of *induced responses* we see (Hint: Remember what ERS and ERD stood for). Use representative plots to illustrate the results.
