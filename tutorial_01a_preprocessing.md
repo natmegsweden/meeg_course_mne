@@ -225,12 +225,12 @@ In additionally to visually manipulating the data, you can make changes to aid y
 
 In Sweden, this is 50Hz, so we use `notch_filter(50)` to cut out a single frequency (or a list if you include the harmonics 100, 150, etc). In the method `notch_filter`, MNE-Python has built in transition zone to reduce the likelihood of artifacts from the filter in future analyses. 
 
-We will also use a bandpass filter calling the method `filter(1,95)` to only take the frequencies between 1 Hz and 95 Hz. There are a couple of reasons you might do this in your own pipelines. One reason could be that you're only interested in a specific frequency window (like alpha, 8-12Hz) or you notice a slow change in the signal overtime, called a slow drift. Since we're often not interested in the lowest or highest frequency signals, preprocessing pipelines filter them out to better analyze the signals of interest. 
+We will also use a bandpass filter calling the method `filter(None, 70)` to only take the frequencies up to 70 Hz. There are a couple of reasons you might do this in your own pipelines. One reason could be that you're only interested in a specific frequency window (like alpha, 8-12Hz) or you notice a slow change in the signal overtime, called a slow drift. Since we're often not interested in the lowest or highest frequency signals, preprocessing pipelines filter them out to better analyze the signals of interest. 
 
-In our case, we want to see the response to a tactile stimulation. Using filters relies on having some prior knowledge about what is considered noise and what your signal of interest looks like. For this tutorial, we will filter out very low (less than 1Hz) and very high (greater than 95). 
+In our case, we want to see the response to a tactile stimulation. Using filters relies on having some prior knowledge about what is considered noise and what your signal of interest looks like. For this tutorial, we will filter out very high frequencies (greater than 70). 
 
 ```{python}
-raw_filtered_fname = join(output_path, 'tactile_stim_lp70Hz-raw.fif')
+raw_filtered_fname = join(output_path, 'tactile_stim_lp70Hz_200Hz-raw.fif')
 
 if exists(raw_filtered_fname):
     raw_filtered = mne.io.read_raw_fif(raw_filtered_fname)
@@ -439,7 +439,7 @@ del(eeg, index, epochs, epochs_ip)
 ## Advanced pre-processing: independent component analysis (ICA)
 Independent component analysis (ICA) is a decomposition method that breaks data into statistically independent components. ICA is useful for identifying patterns of activity that occur regularly in the data. ICA has many applications in MEG/EEG analysis. The most common use is to identify activity related to eye-blinks and heart-beats. These are part of the signal that we (usually) do not want.
 
-Before running ICA it is recommended to apply a high-pass filter on the data of 1Hz. We can use the filtered data to fit the ICA, but the non-filtered data to apply the ICA on.
+We will run the ICA on our continuous raw data and apply it to our epochs.
 
 The code below shows how to remove eye-blinks and heart-beats from the MEG data.
 
@@ -613,7 +613,7 @@ Finally, save the data:
 
 ```{python}
 #%% Save cleaned epochs
-epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif')
+epo_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-ica-epo.fif')
 if not exists(epo_name):
     epochs_clean_ica.save(epo_name, overwrite=True)
 
