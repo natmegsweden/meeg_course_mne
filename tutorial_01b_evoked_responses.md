@@ -13,15 +13,11 @@ The first step is to point to the path where we have the data. Change these to a
 #%% Import modules and set up paths
 import mne
 import os
-from os.path import join, exists, expanduser
+from os.path import join, exists
 import numpy as np
 import matplotlib.pyplot as plt
 
-# project_path = join(expanduser('~'), 'courses/meeg_course_mne') # Change to match your project path
-# meg_path = join(project_path, '../data')   # Change to match your data path
-# figs_path = join(project_path, 'figs')
-
-meg_path = '../data'
+meg_path = '../data' # Change to match your data path
 figs_path = 'figures'
 
 print(os.listdir(meg_path))
@@ -60,8 +56,6 @@ epochs = mne.read_epochs(epo_name)
 ```
 
 ## A little more pre-processing
-The data `epochs` had data 2 seconds before and after the stimulation. For this analysis, we are only interested in the activity that is "evoked" by the stimulation itself. Evoked responses are (usually) not lasting more than 500-1000 ms after stimulation before returning to baseline activity. We will, therefore, cut the epochs to only have data from stimulation (t = 0) until 600 ms after stimulation, and a 200 ms pre-stimulus baseline period. 
-
 Since we are interested in the slow evoked responses, we might as well get rid of high-frequency noise: we will apply a 70 Hz lowpass filter before proceeding.
 
 ```{python}
@@ -70,7 +64,7 @@ hp, lp = None, 70
 epochs.filter(hp, lp)
 ```
 
-Crop trials into time of interest:
+The data `epochs` had data 2 seconds before and after the stimulation. For this analysis, we are only interested in the activity that is "evoked" by the stimulation itself. Evoked responses are (usually) not lasting more than 500-1000 ms after stimulation before returning to baseline activity. We will, therefore, cut the epochs to only have data from stimulation (t = 0) until 600 ms after stimulation, and a 200 ms pre-stimulus baseline period. 
 
 ```{python}
 #%% Crop
@@ -113,22 +107,28 @@ Use `mne.viz.plot_evoked_topo` to plot the ERFs/ERPs. The plots show the average
 ```{python}
 #%% Topo-plots
 # For magnotometers
-fig = mne.viz.plot_evoked_topo(evod['Little finger'].copy().pick_types('mag'), title='Magnotometers',
-                               show=show_plots)
+fig = mne.viz.plot_evoked_topo(
+    evod['Little finger'].copy().pick('mag'),title='Magnotometers',
+    show=show_plots
+    )
 figname = join(figs_path, 'evoked_mag_topo.png')
 if not exists(figname):
     fig.savefig(figname)
 
 # For gradiometers
-fig = mne.viz.plot_evoked_topo(evod['Little finger'].copy().pick_types('grad'), title='Gradiometers',
-                               show=show_plots)
+fig = mne.viz.plot_evoked_topo(
+    evod['Little finger'].copy().pick('grad'), title='Gradiometers',
+    show=show_plots
+    )
 figname = join(figs_path, 'evoked_grad_topo.png')
 if not exists(figname):
     fig.savefig(figname)
 
 # For EEG
-fig = mne.viz.plot_evoked_topo(evod['Little finger'].copy().pick_types(eeg=True), title='EEG',
-                               show=show_plots)
+fig = mne.viz.plot_evoked_topo(
+    evod['Little finger'].copy().pick('eeg'), title='EEG',
+    show=show_plots
+)
 figname = join(figs_path, 'evoked_eeg_topo.png')
 if not exists(figname):
     fig.savefig(figname)
@@ -142,7 +142,7 @@ if not exists(figname):
 
 > **Question 1.6:** Why is it a good idea to plot magnetometers and gradiometers separately? 
 
-You can plot both magnetomenters and gradiomenters in a single plot with ` mne.viz.plot_evoked_topomap` by not adding  `.copy().pick_types('grad')`:
+You can plot both magnetomenters and gradiomenters in a single plot with ` mne.viz.plot_evoked_topomap` by not adding  `.pick()`.
 
 ```{python}
 #%%
