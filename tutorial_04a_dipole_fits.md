@@ -264,3 +264,296 @@ fig.suptitle(
 plt.show()
 ```
 ![measured_vs_predicted_field_d1](figures/measured_vs_predicted_field_d1.png)
+
+> **Question 4.2:** Give your interpretation o fthe dipole diagnostics.
+
+## Two-dipole models
+Do a dipole fit again for the late ERF component by changing the cropping of `mag_evo` to `mag_evo.crop(0.115, 0.130)` and rerun the code.
+
+Plot measures versus predicted topographies again. See if you get something similar to result below:
+
+![measured_vs_predicted_field_late](figures/measured_vs_predicted_field_late.png)
+
+The residual activity hint that there might be an ipsilateral dipole. 
+
+To do a two dipole model, MNE uses a version of beamformers (we'll cover those in tutorial 5) called rap_music or trap_music. They use the same modeling framework, but trap_music is "truncated", hence the 't' added to rap_music. We're going to use trap_music for our two dipole modeling. 
+
+Unlike how single dipole modeling didn't require a forward model, we do have to provide a premade forward model for this calculation. You can load one in you made previously, or recalculate it.
+```{python}
+Replace filename to match your forward solution.
+meg_fwd = mne.read_forward_solution(join(output_path, 'tactile_stim_ds200Hz-meg-fwd.fif'))
+```
+OR
+
+```{python}
+src = mne.setup_volume_source_space(subject=subject, 
+                                    pos=5, 
+                                    subjects_dir=subjects_dir_path, 
+                                    bem=meg_head_model)
+
+meg_fwd = mne.make_forward_solution(
+    info= evo[3].info,
+    trans= trans,
+    src= src,
+    bem= meg_head_model,
+    meg= True,
+    eeg= False  
+)
+```
+Now that we have our forward solution, we can calculate our two dipole model. We crop our evoked potential to just our timepoint of interest (remember: we'll get a fit for the activity every 5 ms) and then calculate our two dipole model. You could specify any number of dipoles with `n_dipoles`, but for our purposes we only need two.
+
+```{python}
+mag_evo = evo[3].copy().pick('mag')
+mag_evo_late = mag_evo.crop(0.115, 0.130)
+
+dipoles, residual = mne.beamformer.trap_music(
+    mag_evo_late, meg_fwd, ad_hoc_cov, n_dipoles=2, return_residual=True
+)
+```
+Visualize the results of our two dipole modeling. 
+```{python}
+mne.viz.plot_dipole_locations(dipoles, trans, "170424", subjects_dir=subjects_dir_path, mode='outlines')
+```
+![two_dipole_model_locations](figures/two_dipole_model_locations.png)
+
+## Compare dipole fits for electrodes, magnetometers, and gradiometers
+In the following section, you find code that do the dipole fits as above but will loop over all sensor types (magnetometers, gradiometers, and electrodes) and all five experimental conditions (i.e. stimulations on the five fingers on the right hand) for the early and late ERF components.
+
+You'll need an EEG forward model for this, so let's load or make one. 
+
+```{python}
+eeg_fwd = mne.read_forward_solution(join(output_path, 'tactile_stim_ds200Hz-eeg-fwd.fif'))
+```
+OR
+```{python}
+src = mne.setup_volume_source_space(subject=subject, 
+                                    pos=5, 
+                                    subjects_dir=subjects_dir_path, 
+                                    bem=eeg_head_model)
+
+eeg_fwd = mne.make_forward_solution(
+    info= evo[3].info,
+    trans= trans,
+    src= src,
+    bem= eeg_head_model,
+    meg= False,
+    eeg= True  
+)
+```
+Now we have all the pieces to loop through all the sensor types and fingers. 
+
+This will take a WHILE to run. 
+
+```{python}
+# Plotting of all the dipole fits
+#set up
+early_latency = (0.045, 0.065)
+late_latency  = (0.115, 0.130)
+
+fingers = [
+    "little finger",
+    "ring finger",
+    "middle finger",
+    "index finger",
+    "thumb",
+]
+
+dipoles_mag_early = []
+dipoles_grad_early = []
+dipoles_eeg_early = []
+
+dipoles_mag_late = []
+dipoles_grad_late = []
+dipoles_eeg_late = []
+
+for evoked in evo:
+
+    # -------------------------
+    # EARLY: single dipole over time
+    # -------------------------
+
+    # MAGNETOMETERS
+    dip_mag, res_mag = mne.fit_dipole(
+        evoked.copy().pick("mag"),
+        cov=ad_hoc_cov,
+        bem=meg_head_model,
+        trans=trans
+    )
+
+    # pick best time point in window
+    mask = (dip_mag.times >= early_latency[0]) & (dip_mag.times <= early_latency[1])
+    idx = np.where(mask)[0][np.argmax(dip_mag.gof[mask])]
+
+    dipoles_mag_early.append((dip_mag, idx))
+
+
+    # GRADIOMETERS
+    dip_grad, res_grad = mne.fit_dipole(
+        evoked.copy().pick("grad"),
+        cov=ad_hoc_cov,
+        bem=meg_head_model,
+        trans=trans
+    )
+
+    mask = (dip_grad.times >= early_latency[0]) & (dip_grad.times <= early_latency[1])
+    idx = np.where(mask)[0][np.argmax(dip_grad.gof[mask])]
+
+    dipoles_grad_early.append((dip_grad, idx))
+
+
+    # EEG
+    dip_eeg, res_eeg = mne.fit_dipole(
+        evoked.copy().pick("eeg"),
+        cov=ad_hoc_cov,
+        bem=eeg_head_model,
+        trans=trans
+    )
+
+    mask = (dip_eeg.times >= early_latency[0]) & (dip_eeg.times <= early_latency[1])
+    idx = np.where(mask)[0][np.argmax(dip_eeg.gof[mask])]
+
+    dipoles_eeg_early.append((dip_eeg, idx))
+
+
+    # -------------------------
+    # LATE: TRAP-MUSIC (2 dipoles)
+    # -------------------------
+
+    # MAG
+    dip_mag_l, _ = mne.beamformer.trap_music(
+        evoked.copy().pick("mag").crop(*late_latency),
+        forward=meg_fwd,
+        noise_cov=ad_hoc_cov,
+        n_dipoles=2
+    )
+    dipoles_mag_late.append(dip_mag_l)
+
+    # GRAD
+    dip_grad_l, _ = mne.beamformer.trap_music(
+        evoked.copy().pick("grad").crop(*late_latency),
+        forward=meg_fwd,
+        noise_cov=ad_hoc_cov,
+        n_dipoles=2
+    )
+    dipoles_grad_late.append(dip_grad_l)
+
+    # EEG
+    dip_eeg_l, _ = mne.beamformer.trap_music(
+        evoked.copy().pick("eeg").crop(*late_latency),
+        forward=eeg_fwd,
+        noise_cov=ad_hoc_cov,
+        n_dipoles=2
+    )
+    dipoles_eeg_late.append(dip_eeg_l)
+```
+## Plot EARLY dipoles
+Now plot the results for the early dipoles for comparison.
+
+```{python}
+# MAGNETOMETERS
+for (dip, idx), finger in zip(dipoles_mag_early, fingers):
+
+    t = dip.times[idx]
+    dip_one = dip.copy().crop(tmin=t, tmax=t)
+
+    mne.viz.plot_dipole_locations(
+        dipoles=dip_one,
+        trans=trans,
+        subject=subject,
+        subjects_dir=subjects_dir_path,
+        mode="outlines",
+        show_all=True,
+        title=f"{finger} ({t*1000:.1f} ms) - MAG"
+    )
+
+# GRADIOMETERS
+for (dip, idx), finger in zip(dipoles_grad_early, fingers):
+
+    t = dip.times[idx]
+    dip_one = dip.copy().crop(tmin=t, tmax=t)
+
+    mne.viz.plot_dipole_locations(
+        dipoles=dip_one,
+        trans=trans,
+        subject=subject,
+        subjects_dir=subjects_dir_path,
+        mode="outlines",
+        show_all=True,
+        title=f"{finger} ({t*1000:.1f} ms) - GRAD"
+    )
+
+
+# EEG
+for (dip, idx), finger in zip(dipoles_eeg_early, fingers):
+
+    t = dip.times[idx]
+    dip_one = dip.copy().crop(tmin=t, tmax=t)
+
+    mne.viz.plot_dipole_locations(
+        dipoles=dip_one,
+        trans=trans,
+        subject=subject,
+        subjects_dir=subjects_dir_path,
+        mode="outlines",
+        show_all=True,
+        title=f"{finger} ({t*1000:.1f} ms) - EEG"
+    )
+```
+As an example: Dipole EARLY for mag, grad, and eeg for the INDEX finger. 
+![index_early_mag](figures/index_early_mag.png)
+![index_early_grad](figures/index_early_grad.png)
+![index_early_eeg](figures/index_early_eeg.png)
+
+## Plot LATE dipoles
+```{python}
+# MAGNETOMETERS
+for dip, finger in zip(dipoles_mag_late, fingers):
+
+    mne.viz.plot_dipole_locations(
+        dipoles=dip,
+        trans=trans,
+        subject=subject,
+        subjects_dir=subjects_dir_path,
+        mode="outlines",
+        show_all=True,
+        title=f"{finger} (115–130 ms) - MAG"
+    )
+
+#GRADIOMETERS
+for dip, finger in zip(dipoles_grad_late, fingers):
+
+    mne.viz.plot_dipole_locations(
+        dipoles=dip,
+        trans=trans,
+        subject=subject,
+        subjects_dir=subjects_dir_path,
+        mode="outlines",
+        show_all=True,
+        title=f"{finger} (115–130 ms) - GRAD"
+    )
+
+#EEG
+for dip, finger in zip(dipoles_eeg_late, fingers):
+
+    mne.viz.plot_dipole_locations(
+        dipoles=dip,
+        trans=trans,
+        subject=subject,
+        subjects_dir=subjects_dir_path,
+        mode="outlines",
+        show_all=True,
+        title=f"{finger} (115–130 ms) - EEG"
+    )
+```
+As an example: Dipole LATE for mag, grad, and eeg for the INDEX finger. 
+
+![index_late_mag](figures/index_late_mag.png)
+![index_late_grad](figures/index_late_grad.png)
+![index_late_eeg](figures/index_late_eeg.png)
+
+### Intermittent conclusions
+We get better fits from the MEG sensors. In contrast, the electrodes seem way off.
+
+Now try to use the spherical head model for EEG created in Tutorial 03. Then rerun the dipole analysis script to do dipole fits based on the sphere model instead of the tissue-based head model.
+
+## Dipole fits with concentric spheres head model
