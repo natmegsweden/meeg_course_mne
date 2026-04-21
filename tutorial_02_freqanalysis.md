@@ -21,12 +21,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcol
 
-# project_path = join(expanduser('~'), 'courses/meeg_course_mne') # Change to match your project path
-# meg_path = join(project_path, '../data')   # Change to match your data path
-# figs_path = join(project_path, 'figs')
-
-meg_path = '../data'
-figs_path = 'figures'
+meg_path = '../data' # change to match your data path
+figs_path = 'figures' # change to match your figure path
 
 show_plots = False # Change to True to open plots in browser
 
@@ -54,12 +50,12 @@ output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 
 ## Load data
 Read in cleaned epochs from **Tutorial 1A** (remember where you put the data and what you named it).
-If you did not complete the data preperation tutorial, you can load the data file `tactile_stim_ds200Hz-clean-ica-epo.fif` from the tutorial material:
+If you did not complete the data preperation tutorial, you can load the data file `tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif` from the tutorial material:
 
 ## Load data
 ```{python}
 #%% Load the data
-epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
+epo_name = join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif')
 epochs = mne.read_epochs(epo_name)
 ```
 
@@ -154,7 +150,7 @@ for p, lab in zip([psd_hann, psd_multi, psd_multi10], ['Hann', 'Multi 2', 'Multi
     psd, freqs = p.get_data(picks = ['mag'], fmin=fmin, fmax=fmax, return_freqs=True)
     ax.plot(freqs, np.log10(psd.mean(0).mean(0)), label = lab)
 ax.legend()
-fig
+
 figname = join(figs_path, 'PSD_all.png')
 if not exists(figname):
     fig.savefig(figname)
@@ -173,16 +169,23 @@ Compare the results from the different methods to calculate PSD.
 
 
 ```{python}
-fig, ax = plt.subplots(3, 1)
-i = 0
-for b, bn in zip([(8, 12), (14, 30), (55, 95)], ['Alpha', 'Beta', 'High gamma']):
+
+freq_bands = [(8, 12), (14, 30), (55, 95)] # defining the lower and upper limits of the frequency bands of interest
+names = ['Alpha', 'Beta', 'High gamma'] # names of the frequency bands for plotting
+
+fig, axes = plt.subplots(1, len(freq_bands), figsize=(12, 6), sharey=True)
+
+for b, bn, ax in zip(freq_bands, names, axes.flatten()):
     for p, lab in zip([psd_hann, psd_multi, psd_multi10], ['Hann', 'Multi 2', 'Multi 10']):
         psd, freqs = p.get_data(picks = ['mag'], fmin=b[0], fmax=b[1], return_freqs=True)
-        ax[i].plot(freqs, np.log10(psd.mean(0).mean(0)), label = lab)
-        ax[i].set_title(bn)
-        ax[i].legend()
-    i += 1
-fig
+        ax.plot(freqs, np.log10(psd.mean(0).mean(0)), label = lab)
+        ax.set_title(bn)
+        ax.legend()
+
+fig.tight_layout()
+
+figname = join(figs_path, 'PSD_bands.png')
+plt.savefig(figname)
 ```
 
 Bonus: View the PSD of EEG
@@ -195,7 +198,10 @@ for p, lab in zip([psd_hann, psd_multi, psd_multi10], ['Multi 1', 'Multi 2', 'Mu
     ax.plot(freqs, np.log10(psd.mean(0).mean(0)), label = lab)
 ax.legend()
 fig.suptitle('EEG')
-fig
+fig.tight_layout()
+
+figname = join(figs_path, 'PSD_EEG.png')
+fig.savefig(figname)
 ```
 
 ## Time-frequency analysis
@@ -204,7 +210,7 @@ The PSD analysis above assumes that the spectral power is the same across the en
 Instead of calculating the power across the entire epoch and then average all epochs, we now will calculate the power for each time sample. In essence, we centre the window on a given time sample and estimate the power of that particular window. We can use different arguments to balance the resolution between time and frequency. 
 
 ### Get TFR with single taper MEG
-In FieldTrip, you also use the function `mne.time_frequency.tfr_multitaper` to calculate the time-frequency response (TFR) using tapers. We can adjust the frequency resolution by defining the `freqs` of interest and the number many cycles per wavelet.
+In MNE, you also use the function `mne.time_frequency.tfr_multitaper` to calculate the time-frequency response (TFR) using tapers. We can adjust the frequency resolution by defining the `freqs` of interest and the number many cycles per wavelet.
 
 NB. TFR calculations take significantly longer time to calculate than PSD. You can always pick a selection by adding e.g `picks='mag'` to only select magnotometers and save time. You can always go back and redo the other channel types. This creates an AverageTRF-object. To create an EpochTFR-object you need to have `average` set to `False` and to reduce memory consumption, you may need to decimate the data (eg. `decim=3`).
 
@@ -289,7 +295,7 @@ fig = tfr_hann.plot(picks='MEG0711', baseline=(None, 0), mode='logratio', cmap='
 
 figname = join(figs_path, 'TFR_hann4singChan.png')
 if not exists(figname):
-    fig.savefig(figname)
+    fig[0].savefig(figname)
 ```
 
 ![](figures/TFR_hann5singChan.png)
@@ -353,12 +359,11 @@ if not exists(figname):
 
 Also try to plot the EEG TFRs for comparison:
 ```{python}
-# Not working
-fig = tfr_morlet.plot_topo(picks='eeg', baseline=(None, 0), cmap='jet')
+eeg_tfr_morlet = tfr_morlet.copy().pick(picks='eeg')
+fig = eeg_tfr_morlet.plot_topo(baseline=(None, 0), cmap='jet')
 
 figname = join(figs_path, 'TFR_morlet3_eeg.png')
-if not exists(figname):
-    fig.savefig(figname)
+fig.savefig(figname)
 ```
 
 ## Increase sensitivity to non-phase locked signals
@@ -382,8 +387,9 @@ Now calculate TFR with wavelets as before:
 freqs = np.arange(1, 45)  # Frequencies we want to estimate from 1 Hz to 45 Hz in steps of 1HZ
 n_cycles=freqs/3
 
-tfr_morlet_induced = mne.time_frequency.tfr_morlet(thumb_induced, freqs=freqs, n_cycles=n_cycles, 
-                                          return_itc=False, average=True)
+tfr_morlet_induced = thumb_induced.compute_tfr(freqs=freqs, n_cycles=n_cycles, 
+    return_itc=False, average=True, method="morlet")
+
 ```
 
 
