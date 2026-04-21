@@ -27,18 +27,16 @@ from os.path import join, exists, expanduser
 import numpy as np
 import matplotlib.pyplot as plt
 
-# project_path = join(expanduser('~'), 'courses/meeg_course_mne') # Change to match your project path
-# meg_path = join(project_path, '../data')   # Change to match your data path
-# figs_path = join(project_path, 'figs')
-
-meg_path = '../data'
-figs_path = 'figures'
+meg_path = '../data' # Change to match your data path
+figs_path = 'figures' # Change to match your figuures path (make sure to create the folder if it does not exist)
 
 print(os.listdir(meg_path))
 print(os.listdir(figs_path))
 
 show_plots = False # Change to True to open plots in browser
 ```
+If you see a "FileNotFoundError: [Errno 2] No such file or directory: 'xxxx'" error, check that you have the correct paths set.
+
 
 Then define the subject and recording specific paths. For now, we only have one subject and session. In principle, we could just define the path as one string variable when we only have one subject. But we introduce this already now as it is a good ´way to organize your data when you have multiple subjects or session. In that case, the cell array `subjects_and_dates` can be expanded to include more subjects, simply by adding the subject ids and session names.
 
@@ -62,7 +60,7 @@ output_path = join(meg_path, subjects_and_dates[0], 'MEG')
 ```
 
 ## First look at what is in the data files
-The `fif` files contain everything that was recorded during the recording data, including MEG data, EEG data, triggers, and various metadata. Before you import everything, take a look at what is in the files. This is especially a good idea if you are dealing with large files to avoid that you confidentially read in more data than what your computer can handle.
+The `fif` files contain everything that was recorded during the recording data, including MEG data, EEG data, triggers, and various metadata. Before you import everything, take a look at what is in the files. This is especially a good idea if you are dealing with large files to avoid that you confidently read in more data than what your computer can handle.
 
 Now it is time to use the first MNE-Python function: use `mne.io.read_info` to read metadata from the `fif` files. Note that this will not read the data yet.
 
@@ -174,21 +172,22 @@ Since the trigger values might tell you nothing you can add event ID's to the tr
 
 ```{python}
 #%% Set event names
-event_id = {'Little finger': 1,
-            'Ring finger': 2,
-            'Middle finger': 4,
-            'Index finger': 8,
-            'Thumb': 16
-            # 'New block begins': 32,
-            # 'End of experiment': 64
-            }    
+event_id = {
+    'Little finger': 1,
+    'Ring finger': 2,
+    'Middle finger': 4,
+    'Index finger': 8,
+    'Thumb': 16
+    # 'New block begins': 32,
+    # 'End of experiment': 64
+    }    
 ```
 
 Now plot the triggers across time:
 
 ```{python}
 # %% Plot events
-fig = mne.viz.plot_events(eve, event_id=event_id)
+fig = mne.viz.plot_events(eve, event_id=event_id, show=show_plots)
 figname = join(figs_path, 'triggers.png')
 if not exists(figname):
     fig.savefig(figname)
@@ -226,7 +225,7 @@ In additionally to visually manipulating the data, you can make changes to aid y
 
 In Sweden, this is 50Hz, so we use `notch_filter(50)` to cut out a single frequency (or a list if you include the harmonics 100, 150, etc). In the method `notch_filter`, MNE-Python has built in transition zone to reduce the likelihood of artifacts from the filter in future analyses. 
 
-We will also use a bandpass filter calling the method `filter(1,95)` to only take the frequencys between 1 Hz and 95 Hz. There are a couple of reasons you might do this in your own pipelines. One reason could be that you're only interested in a specific frequency window (like alpha, 8-12Hz) or you notice a slow change in the signal overtime, called a slow drift. Since we're often not interested in the lowest or highest frequency signals, preprocessing pipelines filter them out to better analyze the signals of interest. 
+We will also use a bandpass filter calling the method `filter(1,95)` to only take the frequencies between 1 Hz and 95 Hz. There are a couple of reasons you might do this in your own pipelines. One reason could be that you're only interested in a specific frequency window (like alpha, 8-12Hz) or you notice a slow change in the signal overtime, called a slow drift. Since we're often not interested in the lowest or highest frequency signals, preprocessing pipelines filter them out to better analyze the signals of interest. 
 
 In our case, we want to see the response to a tactile stimulation. Using filters relies on having some prior knowledge about what is considered noise and what your signal of interest looks like. For this tutorial, we will filter out very low (less than 1Hz) and very high (greater than 95). 
 
@@ -236,7 +235,8 @@ raw_filtered_fname = join(output_path, 'tactile_stim_hp1Hz_lp95Hz-raw.fif')
 if exists(raw_filtered_fname):
     raw_filtered = mne.io.read_raw_fif(raw_filtered_fname)
 else:
-    raw_filtered = raw.copy().notch_filter(50)
+    raw_filtered = raw.copy().load_data() # we need to load the data into memory to apply the filters
+    raw_filtered.notch_filter(50)
     raw_filtered.filter(1, 95)
     raw_filtered.save(raw_filtered_fname)
 ```
@@ -273,7 +273,6 @@ Now let's work a bit with the data.
 #%% Create downsampled epochs
 epochs.load_data() # load data
 epochs.resample(200)
-
 ```
 
 The epochs object contain all the data from all channels and have multiple attributes and methods which can be applied on the epochs.
@@ -346,7 +345,7 @@ The bad electrodes will mess up our analysis if left in. There are many ways to 
 
 ```{python}
 #%% Select channels and set bad channels for interpolation
-eeg = epochs.copy().pick_types(eeg=True)
+eeg = epochs.copy().pick("eeg")
 
 eeg.average().plot_image(show=show_plots)
 eeg.average().plot_topo(show=show_plots)
@@ -389,13 +388,13 @@ In the tutorial data, EEG was recorded with the FCz electrode as reference. This
 ```{python}
 #%% Add reference to EEG
 # Plot with FCz reference
-epochs_ip.copy().pick_types(eeg=True).plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
+epochs_ip.plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots, picks='eeg')
 
 # Add reference
 epochs_ip.set_eeg_reference(ref_channels='average')
 
 # Plot without reference
-epochs_ip.copy().pick_types(eeg=True).plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots)
+epochs_ip.plot(n_channels=5, scalings={'eeg':100e-6}, show=show_plots, picks='eeg')
 
 ```
 
@@ -468,14 +467,14 @@ else:
     ica = mne.preprocessing.ICA(n_components=40,
                                 method='fastica',
                                 random_state=99) #by specifiying the random_state, we get the same result if we run the code again
-    ica.fit(raw, picks='meg') # Using only the MEG channels
+    ica.fit(raw_ds, picks='meg') # Using only the MEG channels
     # Save the ICA object
     
     ica.save(ica_name, overwrite=True)
 
 # Explore the ICA solution
-raw.load_data()
-explained_var_ratio = ica.get_explained_variance_ratio(raw)
+raw_filtered.load_data()
+explained_var_ratio = ica.get_explained_variance_ratio(raw_filtered)
 for channel_type, ratio in explained_var_ratio.items():
     print(
         f'Fraction of {channel_type} variance explained by all components: '
