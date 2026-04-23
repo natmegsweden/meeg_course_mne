@@ -19,12 +19,14 @@ import mne
 from os.path import join
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import ttest_ind ### NEW IMPORT FROM PREVIOUS TUTORIALS
+### NEW IMPORTS ###
+from scipy.stats import ttest_ind 
 from mne.stats import permutation_cluster_test
 from mne.stats import spatio_temporal_cluster_test
 from mne.channels import find_ch_adjacency
 from mne.decoding import SlidingEstimator, cross_val_multiscore
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import RepeatedStratifiedKFold
 
 # define paths 
 
@@ -220,3 +222,175 @@ plt.show()
 > **Question 7.2:** Write a summary of the single-channel non-parametric cluster-based permutation test as if you were to report the result of the test and interpretation thereof in the results section of a scientific paper.
 
 ## Non-parametric cluster-based permutation tests on all channel data
+Non-parametric cluster-based permutation tests are not limited to finding clusters that are adjacent in time. We can define other dimensions where data points can be adjacent, such as frequency bins, adjacent sensors, adjacent source points, etc.. Data points can also be adjacent along more than one dimension. In the next example, we test for a difference between the thumb and little finger sensory stimulation, but across the entire time-period and for all sensors at the same time.
+
+The principle is almost the same as before, with the addition that we specify how the sensors are connected as well.
+
+Since we cannot combine the test across magnetometers, gradiometers, or electrodes due to them having different units, we focus only on magnetometers in this example. We transpose the data to (trials, times, channels) because MNE-Python requires that the last dimension of your data be the dimension that your adjacency corresponds to. In our case this is channels.
+
+```{python}
+epochs_mag = epo.copy().pick('mag')
+
+X1_mags = epochs_mag['Thumb'].get_data()
+X2_mags = epochs_mag['Little finger'].get_data()
+
+# transpose to (trials, times, channels)
+X1_mags = np.transpose(X1_mags, (0, 2, 1))
+X2_mags = np.transpose(X2_mags, (0, 2, 1))
+```
+The next step is to define which sensors are "neighbours". We will create a structure that tells `spatio_temporal_cluster_test` what magnetometers are spatially connected. In this context, "connected" only means that they are within proximity based on the physical distance.
+
+```{python}
+adjacency, ch_names = find_ch_adjacency(epochs_mag.info, ch_type='mag')
+```
+Use ft_neighbourplot to visually inspect how the neighbours structure looks:
+```{python}
+mne.viz.plot_ch_adjacency(epochs_mag.info, adjacency, ch_names)
+```
+The dots are sensors and the lines are the connections.
+
+We're now ready to call `spatio_temporal_cluster_test`. This is a very similar test to before but instead of clustering across one dimension (like time), we cluster across space (adjacency matrix) and time. 
+
+```{python}
+T_obs_mags, clusters_mags, p_values_mags, _ = spatio_temporal_cluster_test(
+    [X1_mags, X2_mags],
+    adjacency=adjacency,
+    n_permutations=1000
+)
+```
+Let's visualize the results by plotting the difference between the two evoked responses with a mask that only highlights the significant clusters. 
+
+```{python}
+evo_thumb_mag = data_thumb.copy().pick("mag").average()
+evo_little_mag = data_little.copy().pick("mag").average()
+evo_diff = mne.combine_evoked([evo_thumb_mag, evo_little_mag], weights=[1, -1])
+
+sig_mask = np.zeros(T_obs_mags.shape, dtype=bool)
+
+for clu, p in zip(clusters_mags, p_values_mags):
+    if p < 0.05:
+        sig_mask = sig_mask | clu  # OR |= clu
+
+for i, (p, clu) in enumerate(zip(p_values_mags, clusters_mags)):
+    if p < 0.05:
+        print(f"Cluster {i}: p={p}, size={clu.sum()}")
+
+sig_mask_plot = sig_mask.T  # MNE plotting wants (n_channels, n_times)
+
+evo_diff.plot_image(
+    picks="mag",
+    mask=sig_mask_plot,
+    mask_alpha=0.5,
+    time_unit="s",
+    show_names=False,
+)
+```
+The plot shows the difference between conditions (Thumb − Little finger) across all magnetometer channels over time. Each row represents a sensor, and each column represents a time point. The color indicates the magnitude and direction of the difference between conditions, while the shaded regions indicate clusters that are statistically significant after correction for multiple comparisons.
+
+Significant clusters may span many sensors and time points and can appear visually fragmented. Each cluster is evaluated as a single statistical unit, even if it covers a large and irregular region.
+
+> **Question 7.3:** Write a summary of the non-parametric cluster-based permutation test on the full magnetometer array as if you were to report the result of the test and interpretation thereof in the results section of a scientific paper.
+
+## Optional: Multivariate pattern analysis
+In the final example, we use multivariate pattern analysis (MVPA) to test for difference between conditions. Instead of testing to reject the null hypothesis, we test how well a classifier can discriminate between the two conditions. 
+
+In short, we use the full magnetometer array to train a classifier to predict which of the two conditions (thumb or little finger tactile stimulation) that a new dataset belongs to, by looking at each time point of the dataset. From this, we look at how well we can classify over time. In a sense, it's a way to understand how much information about the neural response is conveyed at each time point.
+
+To do this, we're going to work with a new package called scikit learn (sklearn) to make and train the classifier. There are a lot of new terms used in this block of code, but you don't have to understand how each one works in detail. We'll go through it step by step. 
+
+First we make sure we have the data we want to use for this section and then we prepare it for use in training the classifier. This involves getting the correct shape and make binary labels (0, 1) for each of the conditions. Then we start gathering the pieces we need to get a final score at each time point. 
+
+`cv` refers to cross validation which is a term for how you can randomly split your data into training and testing sets so your classifier isn't overfit to one specific set of data, but rather learns the pattern that can be generalized to many data sets. We choose `RepeatedStratifiedKFold` and split the data 10 times and train on 9 of the splits with the last as a testing set. This cycles through until all of the splits have been the testing set. Then we repeat the process with a different set of 10 splits. By specifying `random_state`, we ensure that if we run it again, it will be split the same way each time. 
+
+`clf` is our classifier. We chose linear discriminant analysis. 
+
+`time_decoder` is our callable implementation of `clf`. Here with `SlidingEstimator` we describe that we want to fit the model on a subset of data over time (hence 'sliding' as it 'slides' down our time series). We also tell it how to score our classifier `scoring="roc_auc"`. In roc_auc scoring, the best possible result is 1, meaning the classifier can perfectly separate the two conditions. .5 is the same level as chance.
+
+Finally we have all the pieces to run the analysis. we call everything together with `cross_val_multiscore` and train/test `time_decoder` with our organized data X, y, and we tell the algorithm what kind of cross validation we want. The result is an array `scores` with one row for each cross validation (10 * 2) and one column for each time point. 
+
+Then we average across our cross validations and find the standard error for plotting purposes. 
+
+Our plot then shows the roc_auc score at each time point. The dashed line represents chance level scores.
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+from mne.decoding import SlidingEstimator, cross_val_multiscore
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import RepeatedStratifiedKFold
+
+# Magnetometer-only data, matching the FieldTrip section
+epochs_mag_thumb = data_thumb.copy().pick("mag")
+epochs_mag_little = data_little.copy().pick("mag")
+
+# Combine conditions into one Epochs object
+epochs_mvpa = mne.concatenate_epochs([epochs_mag_thumb, epochs_mag_little])
+
+# X shape for MNE decoding: (n_epochs, n_channels, n_times)
+X = epochs_mvpa.get_data()
+
+# Binary labels: 0 = Thumb, 1 = Little finger
+n_thumb = len(epochs_mag_thumb)
+n_little = len(epochs_mag_little)
+y = np.r_[np.zeros(n_thumb, dtype=int), np.ones(n_little, dtype=int)]
+
+# FieldTrip-like CV:
+# cfg.mvpa.k = 10
+# cfg.mvpa.repeat = 2
+# cfg.mvpa.stratify = 1
+cv = RepeatedStratifiedKFold(
+    n_splits=10,
+    n_repeats=2,
+    random_state=42,
+)
+
+# FieldTrip: cfg.mvpa.classifier = 'lda'
+clf = LinearDiscriminantAnalysis()
+
+# FieldTrip: cfg.mvpa.metric = 'auc'
+time_decoder = SlidingEstimator(
+    clf,
+    scoring="roc_auc",
+    n_jobs=None,
+    verbose=True,
+)
+
+# scores shape: (n_splits * n_repeats, n_times)
+scores = cross_val_multiscore(
+    time_decoder,
+    X,
+    y,
+    cv=cv,
+    n_jobs=None,
+)
+
+# Average across CV runs
+mean_scores = scores.mean(axis=0)
+sem_scores = scores.std(axis=0, ddof=1) / np.sqrt(scores.shape[0])
+
+# Plot AUC over time
+plt.figure()
+plt.plot(epochs_mvpa.times, mean_scores, label="AUC")
+plt.fill_between(
+    epochs_mvpa.times,
+    mean_scores - sem_scores,
+    mean_scores + sem_scores,
+    alpha=0.3,
+)
+plt.axhline(0.5, linestyle="--", label="Chance")
+plt.xlabel("Time (s)")
+plt.ylabel("AUC")
+plt.title("Time-resolved MVPA (LDA, 10-fold CV repeated twice)")
+plt.legend()
+plt.show()
+```
+
+> **Question 7.4:** Select one of the above ways to do statistical comparisons and redo that analysis using either gradiometers or electrodes instead of magnetometers (you decide yourself). Write a summary of the procedure from selecting data features/method, how you did the statistical test (including key parameteres), the results of the test, and interpretation of the results as if you were to report the procedure and results in the method and results sections in a scientific paper.
+
+> Feel free to change any parameters of the functions or data selection procedure as you like, but describe what you did and why in the text. 
+
+> If you choose gradiometers, you will have to do the extra step to combine them in all-channel analyses.
+
+# End of Tutorial 7 
+This tutorial has presented a few ways to do statistical comparisons MEG/EEG signals. Which method is optimal depends on the research question at hand.
