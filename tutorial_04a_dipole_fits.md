@@ -48,11 +48,11 @@ Load the required data files for dipole fits:
 ```{python}
 #load relevant files
 #evokeds
-evo_path = join(output_path, 'tactile_stim_ds200Hz-clean-ica-ave.fif')
+evo_path = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-ica-ave.fif')
 evo = mne.read_evokeds(evo_path)
 # when you import evoked objects without specifying which event type you want, it imports them all as a list
 
-epo_path= join(output_path, 'tactile_stim_hp1Hz_lp95Hz_ds200Hz-clean-ica-epo.fif')
+epo_path= join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-ica-epo.fif')
 epo = mne.read_epochs(epo_path)
 
 #head models

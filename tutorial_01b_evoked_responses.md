@@ -198,7 +198,7 @@ Save the data for later:
 ```{python}
 #%% Save the evokeds
 
-evo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-ave.fif')
+evo_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-ica-ave.fif')
 if not exists(evo_name):
     mne.write_evokeds(evo_name, evo, overwrite=True)
 

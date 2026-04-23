@@ -55,7 +55,7 @@ mri_path = join(meg_path, subjects_and_dates[0], 'MRI')
 For this requirement for the source reconstruction, I chose to use an epochs object we created, but MNE-Python also accepted `Raw` and `Evoked` objects.
 
 ```{python}
-epo_name = join(output_path, 'tactile_stim_ds200Hz-clean-ica-epo.fif')
+epo_name = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-ica-epo.fif')
 epochs = mne.read_epochs(epo_name)
 ```
 The `Epochs`object in MNE-Python contains the digitization information from the data acquisition that describes head shape and fiducial landmarks. These points are recorded in the head coordinate system. It also contains information about the orientation of the MEG sensors to the HPI, or Head Position Indicator, coils that are used to localize the head within the sensor array. 

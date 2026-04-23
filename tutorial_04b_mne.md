@@ -43,7 +43,7 @@ subjects_dir = join(meg_path, subjects_and_dates[0], 'freesurfer_subjects')
 In previous tutorials we have prepared and cleaned evoked data, created a head model to work with MEG, and defined the `trans` file to align our MRI and MEG data. Now we load all of those files for use in this tutorial. If you had more than one subject, you would have to loop through these files as well to have each analysis be personalized to the subject.
 
 ```{python}
-evo_path = join(output_path, 'tactile_stim_ds200Hz-clean-ica-ave.fif')
+evo_path = join(output_path, 'tactile_stim_lp70Hz_ds200Hz-clean-ica-ave.fif')
 evo = mne.read_evokeds(evo_path)
 
 #head model
