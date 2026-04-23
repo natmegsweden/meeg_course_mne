@@ -126,5 +126,97 @@ plt.show()
 Finally, let us make the statistical comparison. Though data in the two conditions come from the same subject, each unit of observation is independent of the other condition, so we use a two-sample t-test (i.e., there is no logical pairing of data on the single-trial level). To do the test between conditions, we use Matlab's built-in function for a two-sample t-test (ttest2):
 
 ```{python}
+tval, pval = ttest_ind(thumb_data, little_data)
+print("t =", tval)
+print("p =", pval)
+```
 
+> **Question 7.1:** In this analysis, we compared values averaged over a fixed time-window. Another approach to get a summary value of the same component could be to find the maximum value of the peak in the peak channel. However, this approach is discouraged. Reflect on why this might be the case, and give your answer.
 
+## Intermediate Summary
+The feature summary approach to comparing features of MEG/EEG signals, like what you have just done, is easy to apply and does not require more statistical knowledge compared to any other comparison between two samples. However, the step of selecting which features to compare, requires careful consideration and that you are specific about the hypothesis that you want to test. More exactly, what part of the MEG/EEG signal that you want to compare. This approach open for easy ways to cheat at statistics, by first looking at your data and then select the feature that you want to compare based on how the data looks. This is known as hypothesising after the results are known, or HARKing, and is wrong. The features of the MEG/EEG signals that you compare should be defined in advance before you look at your data and even before you do the experiment.
+
+## Non-parametric cluster-based permutation tests on single-channel data
+Non-parametric cluster-based permutation tests is a way to analyse more than just a single feature of the data signals while at the same time, correcting for multiple comparisons. The principles of non-parametric cluster-based permutation tests are, in short, that we test for differences across all time points (or frequency points, or whatever type of data that we test) and then take the sum data points that are connected. In this example, it will be time-points that are connected. The test is then repeated N-times where the data labels are randomly assigned. The cluster sum of the largest cluster in the real data is compared to the distribution of the largest cluster values for all permutation. If the real largest cluster sum is higher than 95% of the permutated largest cluster sums, we can with reject the null-hypothesis (for a detailed description see Maris & Oostenveld, 2007).
+
+Now let us test for differences between the ERFs for the tactile stimulation on the thumb and the little finger, i.e. the null-hypothesis that there is no difference.
+
+We select the channel that showed the largest ERF peak (as above) as the best representation fo the ERF time-course.
+
+```{Python}
+X1 = data_thumb.copy().pick(pk_chan).get_data()[:, 0, :]
+X2 = data_little.copy().pick(pk_chan).get_data()[:, 0, :]
+```
+Let's inspect the ERF's before we continue.
+
+```{python}
+times = data_thumb.times
+
+plt.plot(times, X1.mean(axis=0), label="Thumb")
+plt.plot(times, X2.mean(axis=0), label="Little finger")
+
+plt.xlabel("Time (s)")
+plt.ylabel("Amplitude")
+plt.legend()
+plt.title(f"Channel: {pk_chan}")
+plt.show()
+```
+To do the non-parametric cluster-based permutation test on evoked signals, we use the function `permutation_cluster_test`. This is a built-in MNE-Python statistical test that is used to determine if your data differs between conditions across timepoints, while controlling for multiple comparisons. Many things that need to be specified in the Matlab/Fieldtrip version of this statistical test are default or implied in MNE-Python, so don't worry if you are comparing between them and it looks like you're missing something.
+
+The `permutation_cluster_test` function performs a statistical analysis that looks for clusters of adjacent time points that show consistent differences between conditions, reducing false positives that would occur if you performed a separate test at each time point.
+
+The observed data is clustered and assigned cluster-level test statistics. Then, because it's a permutation test, we generate n amount of null distributions for comparison to the observed data. These null distributions are made by shuffling the condition labels across trials (epochs) and performing the clustering again. Basically saying "what would the clustering look like if there was no difference between the conditions?". The observed clusters are compared to these null clusters and they are statistically significant if they are larger than most clusters made during permutation.
+
+In our function call, the parameters we use help explain what it is that we're doing behind the scenes. `n_permutations=1000` means we will randomly permute the data to form clusters for the null distribution 1000 times. The higher this number, the more precise your p-value can be. `tail=0` is a default parameter that we have stated explicitly for clarity; it means that we are performing two-tailed tests. We aren't declaring a specific statistical test that should be done at each cluster, which means that we will be using the default test. In MNE-Python, this is a one-way ANOVA at each time point. It performs a function similar to a t-test in this context. And finally, `threshold=None` indicates that MNE should automatically determine the threshold for forming clusters in our data.
+
+Our data is given as a list `[X1, X2]` where each item on the list is (observations, time points). 
+
+```{python}
+T_obs, clusters, p_values, _ = permutation_cluster_test(
+    [X1, X2], 
+    n_permutations=1000,
+    tail=0,
+    threshold=None
+    )
+```
+Explore what's inside each of the values that `permutation_cluster_test` returned. The test statistics are in `T_obs`, indices of the identified clusters in `clusters`, and the p-values of each cluster in `p_values`. 
+
+We can plot the results of the test directly on the evoked response to see what sections are significant. The shaded areas are the clusters with significant differences.
+
+```{python}
+# Single-channel evoked responses
+evo_thumb = data_thumb.copy().pick(pk_chan).average()
+evo_little = data_little.copy().pick(pk_chan).average()
+
+times = evo_thumb.times
+thumb_mean = evo_thumb.data[0]
+little_mean = evo_little.data[0]
+
+fig, ax = plt.subplots()
+
+# Plot the two condition averages
+ax.plot(times, thumb_mean, label="Thumb")
+ax.plot(times, little_mean, label="Little finger")
+
+# Shade significant clusters
+for cluster, p_val in zip(clusters, p_values):
+    if p_val < 0.05:
+        inds = cluster[0] if isinstance(cluster, tuple) else cluster
+        inds = np.asarray(inds)
+
+        if inds.dtype == bool:
+            sig_times = times[inds]
+            if len(sig_times) > 0:
+                ax.axvspan(sig_times[0], sig_times[-1], alpha=0.5)
+        else:
+            ax.axvspan(times[inds[0]], times[inds[-1]], alpha=0.5)
+
+ax.set_xlabel("Time (s)")
+ax.set_ylabel("Amplitude")
+ax.set_title(f"Cluster permutation test at {pk_chan}")
+ax.legend()
+plt.show()
+```
+> **Question 7.2:** Write a summary of the single-channel non-parametric cluster-based permutation test as if you were to report the result of the test and interpretation thereof in the results section of a scientific paper.
+
+## Non-parametric cluster-based permutation tests on all channel data
