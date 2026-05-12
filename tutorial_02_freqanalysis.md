@@ -204,7 +204,7 @@ Instead of calculating the power across the entire epoch and then average all ep
 ### Get TFR with single taper MEG
 In MNE, you also use the function `mne.time_frequency.tfr_multitaper` to calculate the time-frequency response (TFR) using tapers. We can adjust the frequency resolution by defining the `freqs` of interest and the number many cycles per wavelet.
 
-NB. TFR calculations take significantly longer time to calculate than PSD. You can always pick a selection by adding e.g `picks='mag'` to only select magnotometers and save time. You can always go back and redo the other channel types. This creates an AverageTRF-object. To create an EpochTFR-object you need to have `average` set to `False` and to reduce memory consumption, you may need to decimate the data (eg. `decim=3`).
+NB. TFR calculations take significantly longer time to calculate than PSD. You can always pick a selection by adding e.g `picks='mag'` to only select magnotometers and save time. You can always go back and redo the other channel types. This creates an AverageTFF-object. To create an EpochTFR-object you need to have `average` set to `False` and to reduce memory consumption, you may need to decimate the data (eg. `decim=3`).
 
 
 ```{python}
