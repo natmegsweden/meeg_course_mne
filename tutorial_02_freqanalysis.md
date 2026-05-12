@@ -75,11 +75,11 @@ In the first calculation, we will use a Hann window to taper the epochs. This is
 
 ```{python}
 method = 'welch'
-bandwidth = 'hann'
+window = 'hann'
 fmin = 1
 fmax = 95
 
-psd_hann = thumb.compute_psd(method=method, fmin=fmin, fmax=fmax, bandwidth=bandwidth)
+psd_hann = thumb.compute_psd(method=method, fmin=fmin, fmax=fmax, window=window)
 ```
 
 Once finished, look at what is in the structure `psd_hann.get_data()` (hint: use `.shape`).
