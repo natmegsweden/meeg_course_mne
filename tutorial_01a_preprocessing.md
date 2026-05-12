@@ -492,7 +492,7 @@ ica.plot_components(inst=raw_ds) # click the components to view its properties
 
 See if you can find components that correspond to eye-blinks and heart-beats from the component topographies and component time-series? When you have found the components that correspond to eye-blinks and heart-beats, you can remove by adding them to the list `ica.exclude`:
 
-
+We will do a semi-automated rejection of ICA components, so you do not need to run the code below. It is an example of what you could do if you were manually reviewing the ICA results. You could also select them within the interactive display of the components.
 
 ```{python}
 #%% Exclude components
