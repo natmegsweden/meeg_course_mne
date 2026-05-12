@@ -90,11 +90,11 @@ Plot the PSD using `plot_topo()`. Since we want to see the averaged data we also
 
 ```{python}
 method = 'welch'
-bandwidth = 'hann'
+window = 'hann'
 fmin = 1
 fmax = 45
 
-psd_hann = thumb.compute_psd(method=method, fmin=fmin, fmax=fmax, bandwidth=bandwidth)
+psd_hann = thumb.compute_psd(method=method, fmin=fmin, fmax=fmax, window=window)
 
 fig = psd_hann.average().plot_topo(color='black', fig_facecolor='white', axis_facecolor='white',
                                     show=show_plots)
