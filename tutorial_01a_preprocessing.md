@@ -453,10 +453,10 @@ if exists(raw_ds_name):
     raw_ds = mne.io.read_raw_fif(raw_ds_name)
 else:
     # We resample in place to match the epochs
-    raw_filtered = raw.copy().filter(None, 70)
+    raw_filtered = raw.copy().load_data().filter(None, 70)
     raw_ds = raw_filtered.resample(200) # since we need to load the raw data, lets downsample to 200Hz (same as epochs)
     raw_ds.load_data()
-    raw_ds.save(raw_ds_name)
+    raw_ds.save(raw_ds_name, overwrite=True)
 
 if exists(ica_name):
     ica = mne.preprocessing.read_ica(ica_name)
