@@ -85,6 +85,8 @@ In MNE-Python, we first must have a head surface to map our head coordinates ont
 ### Set up your environment to access the Freesurfer functions necessary. 
 MNE-Python head model creation is closely linked to Freesurfer. There is not a good way to create a headmodel in MNE without Freesurfer access. MNE uses Freesurfer functions behind the scenes, so we want to make sure it knows where to find the code it needs.
 
+If you don't have Freesurfer, this part is a bit more experimental. Feel free to download it in your own time if you like, but we will attempt to bypass it here. You can skip the definition of the FREESURFER_HOME and SUBJECTS_DIR variable and just define your subjects_dir normally to the freesurfer_subjects folder. From there you should be able to proceed normally. If a function does not work, check to see if the result already exists (for example, the watershed bem) and if it doesn't, let us know! 
+
 ```{python}
 fs_home = "/Applications/freesurfer" # change to your own freesurfer location
 os.environ["FREESURFER_HOME"] = fs_home
