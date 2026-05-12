@@ -277,7 +277,7 @@ epochs.resample(200)
 
 The epochs object contain all the data from all channels and have multiple attributes and methods which can be applied on the epochs.
 
-Explore the different methods by typing `epochs.` followed by tab in the console to see all methods options.
+Explore the different methods by typing `epochs` followed by tab in the console to see all methods options (or by running a line that says `epochs`)
 
 > **Question 1.3:** Explain how the MEG/EEG is data stored in the `epochs` struct.
 
