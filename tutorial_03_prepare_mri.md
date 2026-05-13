@@ -108,6 +108,8 @@ Here we specify which 'subject' we're working with (in our case, 170424) and cre
 
 A BEM, or boundary element model, is a method of defining compartments of the head for future use in conductor model creation. This function creates the boundaries that separate brain, skull, and scalp, based on the MRI for each subject. This is important in source reconstruction because the different layers have different conductivity, For EEG it's especially important as the electical signals are distorted by each layer; whereas for MEG, the brain conductivity is the most important.
 
+If you don't have Freesurfer, you can skip this step. The surfaces that you would generate here already exist in the freesurfer_subjects file that you downloaded from Canvas. Just ensure that the subjects_dir points to the location of the freesurfer_subjects file that you downloaded when you plot the bem. I recommend keeping this freesurfer_subjects folder with the MRI and MEG data folders.
+
 ```{python}
 subject = "170424"
 
@@ -148,6 +150,13 @@ mne.viz.plot_bem(
 Now that we have our head surfaces created from the MRI, we can align our MRI and head points from the MEG/EEG data. 
 
 Differently from Fieldtrip in Matlab, MNE-Python uses a GUI that combines many of the commands typically used to align the head points and MRI. First we align the MRI fiducials to the fiducials digitized in the MEG data acquisition; then, we align the digitized scalp points to the MRI scalp surface. 
+
+```{python}
+mne.gui.coregistration(inst=epo_name, 
+                       subject=subject, 
+                       subjects_dir=subjects_dir, 
+                       head_high_res=True)
+```
 
 Within the interface, the process follows these steps:
 
