@@ -117,7 +117,7 @@ bandwidth = 4       # ±2 Hz smoothing
 fmin = 1
 fmax = 95
 
-psd_multi = thumb.compute_psd(method=method, fmin=fmin, fmax=fmax, bandwidth=bandwidth)
+psd_multi = thumb.compute_psd(method=method, fmin=fmin, fmax=fmax, bandwidth=bandwidth, normalization='full')
 ```
 
 Plot the PSD using `.plot_topo()` as above.
@@ -130,7 +130,7 @@ bandwidth = 20      # ±10 Hz smoothing
 fmin = 1
 fmax = 95
 
-psd_multi10 = thumb.compute_psd(method=method, fmin=fmin, fmax=fmax, bandwidth=bandwidth)
+psd_multi10 = thumb.compute_psd(method=method, fmin=fmin, fmax=fmax, bandwidth=bandwidth, normalization='full')
 ```
 
 Compare the single taper PSD, and the two multitaper PSD you have calculated. Plot them side-by-side using `matplotlib.pyplot` imported as `plt`
