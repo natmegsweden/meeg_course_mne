@@ -319,7 +319,7 @@ if not exists(figname):
     fig.savefig(figname)
 
 ```
-![butterfly](figures/butterfly.png "butterfly")
+![butterfly](figures/trials_butterfly_plot.png "butterfly")
 ![epochs_image](figures/epochs_image.png "epochs_image")
 
 You can add visual pre-processing options using the `plot` as before.
