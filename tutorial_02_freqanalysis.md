@@ -153,11 +153,11 @@ if not exists(figname):
 
 Compare the results from the different methods to calculate PSD.
 
-> **Question 2.4:** Select the alpha range (~8-12 Hz) by changing `fmin` and `fmax`. How different/alike are they? Explain why?
+> **Question 2.4:** Select the alpha range (~8-12 Hz) by changing `fmin` and `fmax`. How different/alike do the results for Hann, Multi 2 and Multi 10 look? Explain why?
 >
-> Select the beta range (~14-30 Hz). How different/alike are they? Explain why?
+> Select the beta range (~14-30 Hz). How do the beta spectra compare between methods? Explain why?
 >
-> Finally, plot the "high-gamma" range (~55-95 Hz). How do the high-gamma spectra compare between methods?
+> Finally, plot the "high-gamma" range (~55-95 Hz). How do the high-gamma spectra compare between methods? Explain why?
 
 
 ```{python}
