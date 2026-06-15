@@ -358,7 +358,8 @@ plt.show()
 ![virt_elec_peka_beta_meg](figures/virt_elec_peka_beta_meg.png)
 ![virt_elec_beta_power](figures/virt_elec_beta_power.png)
 
-> **Question 5.4:** The procedure to create a "virtual channel" is the same for magnetometers and EEG electrodes (though the actual calculation "under the hood" is different). Repeat the procedure to calculate the virtual electrode, but this time for the EEG data. Change the `thumb_epo.pick()` to `eeg` and make sure you're using an EEG forward model. You can read in one that you've saved before or make a new one. 
+> **Question 5.4:** How does the virtual channel estimated from the EEG electrodes compare the virtual channel estimated from the gradiometers and why might this be? Include a plot of the virtual channel to help with the explanation.)
+> The procedure to create a "virtual channel" is the same for magnetometers and EEG electrodes (though the actual calculation "under the hood" is different). Repeat the procedure to calculate the virtual electrode, but this time for the EEG data. Change the `thumb_epo.pick()` to `eeg` and make sure you're using an EEG forward model. You can read in one that you've saved before or make a new one. 
 >
 >```{python}
 > eeg_fwd = mne.make_forward_solution(
@@ -376,7 +377,6 @@ plt.show()
 > thumb_epo.set_eeg_reference('average', projection=True)
 >```
 >
-> How does the virtual channel estimated from the EEG electrodes compare the virtual channel estimated from the gradiometers and why might this be? (You're welcome to include your plot if that would be helpful for explaining.)
 
 ## End of Tutorial 5
 Beamformers offers a variety of methods to analyse MEG (and to some extend EEG) data. You can use it to localize responses in the data, localize specific oscillatory activity, or to "reconstruct" signals as if they were measured at a given location. In the next tutorial, we will also look at how beamformers can be used in connectivity analysis.
