@@ -146,9 +146,9 @@ The centre of the head bias means that the source reconstructions in themselves 
 
 ```{python}
 #crop the data, select only thumb
-stim_epo = epo['Thumb'].copy().crop(tmin=.100, tmax=0.200)
-baseline_epo = epo['Thumb'].copy().crop(tmin=-0.200, tmax=-0.100)
-combo_epo = epo['Thumb'].copy().crop(tmin=-0.200, tmax=0.200)
+stim_epo = epo['Thumb'].copy().crop(tmin=0.0, tmax=0.100)
+baseline_epo = epo['Thumb'].copy().crop(tmin=-0.100, tmax=0.0)
+combo_epo = epo['Thumb'].copy().crop(tmin=-0.100, tmax=0.100)
 
 stim_epo.pick('meg')
 baseline_epo.pick('meg')
@@ -162,8 +162,8 @@ combo_evo = combo_epo.average()
 We also need covariance matrices for the contrasting beamformer that have the specific data and baseline period's we're looking fr. 
 
 ```{python}
-contrast_data_cov = mne.compute_covariance(stim_epo, tmin=.100, tmax=.200, rank='info', method='auto')
-contrast_noise_cov = mne.compute_covariance(baseline_epo, tmin=None, tmax=-.100, rank='info', method='auto')
+contrast_data_cov = mne.compute_covariance(stim_epo, tmin=0.0, tmax=0.100, rank='info', method='auto')
+contrast_noise_cov = mne.compute_covariance(baseline_epo, tmin=-0.1, tmax=0.0, rank='info', method='auto')
 ```
 
 Then do the LCMV source inversion. We are not interested in the source reconstruction as such. We only use this part to calculate the beamformer filter, that we then will apply separately to the stimulation data in baseline data. 
@@ -195,6 +195,8 @@ source_contrast.plot(src=src, subject=subject, subjects_dir=subjects_dir)
 ![LCMV_source_contrast](figures/LCMV_source_contrast.png)
 
 > If the plot layout looks a little strange (but looks like the one pictured above), that's correct! MNE just has some quirks in plotting that aren't easy to solve.
+
+> **Question 5.3:** Would it make sense to use a LCMV beamformer for the late latency activity ans why? (hint: think back to what you learned in the dipole fitting tutorial). 
 
 ## Frequency-Domain Beamformer
 In the next part, we will do source reconstruction of time-frequency data with a beamformer method known as Dynamic Imaging of Coherent Sources (DICS).
@@ -269,7 +271,7 @@ brain = stc.plot(
 ```
 ![DICS_source_contrast](figures/DICS_source_contrast.png)
 
-> **Question 5.3:** Explain how you would interpret the new image that you have created.
+> **Question 5.4:** Explain how you would interpret the new image that you have created.
 
 ## Use beamformers to make a "virtual electrode"
 Virtual electrodes are a useful tool to get time-series "as if" we had recorded data from a given site in the brain and if we do not want to deal with source data from the whole volume, e.g. if we have hypotheses about specific regions of interest.
@@ -358,7 +360,7 @@ plt.show()
 ![virt_elec_peka_beta_meg](figures/virt_elec_peka_beta_meg.png)
 ![virt_elec_beta_power](figures/virt_elec_beta_power.png)
 
-> **Question 5.4:** How does the virtual channel estimated from the EEG electrodes compare the virtual channel estimated from the gradiometers and why might this be? Include a plot of the virtual channel to help with the explanation.)
+> **Question 5.5:** How does the virtual channel estimated from the EEG electrodes compare the virtual channel estimated from the gradiometers and why might this be? Include a plot of the virtual channel to help with the explanation.)
 > The procedure to create a "virtual channel" is the same for magnetometers and EEG electrodes (though the actual calculation "under the hood" is different). Repeat the procedure to calculate the virtual electrode, but this time for the EEG data. Change the `thumb_epo.pick()` to `eeg` and make sure you're using an EEG forward model. You can read in one that you've saved before or make a new one. 
 >
 >```{python}
